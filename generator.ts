@@ -1,10 +1,8 @@
 import { parse } from "@babel/parser"
-import generate from "@babel/generator"
 import * as types from "@babel/types";
 import traverse from "@babel/traverse"
 
 import code_utils from "./utils/code_utils";
-import vm from "./utils/vm";
 
 function handleMemberExpression(node: types.Node) {
     let keys: string[] = [];
