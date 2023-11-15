@@ -1,4 +1,4 @@
-import { obfuscate } from "./obfuscator";
+import { transform } from "./generator";
 import fs from "fs";
 import { spawn } from "child_process";
 
@@ -7,15 +7,15 @@ function byteCount(s: any) {
 }
 
 (async () => {
-    const input = fs.readFileSync("input/4.js").toString();
-    let output = await obfuscate(input);
+    const input = fs.readFileSync("input/0.js").toString();
+    let output = await transform(input);
     if (output == undefined) {
         console.log("Output is undefined");
         return;
     }
     const shouldEval = false;
     fs.writeFileSync("output/output.js", output);
-    if (shouldEval) {
+    if(shouldEval) {
         console.info("Evaluating output with NodeJS...\n");
 
         const nodeProcess = spawn("node", ["output/output.js"], {
