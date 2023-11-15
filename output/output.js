@@ -1,2 +1,78 @@
-/* JOVM */
-const _={_:{_OeP:0,_iL2:1,_rLE:2,_8KB:3,_cCr:4,_CU4:5,_sXn:6,_dFo:7,_4At:8,_8Tn:9},set _OeP(e){_.e(e[0])},o:[],l:e=>($=_.t.slice(0,e),_.t=_.t.slice(e,_.t.length),$),s:e=>_.t.shift(),r:(e,o)=>_[Object.keys(_._)[e]]=o,n:e=>_.o.unshift(e),t:[],get _8KB(){_.s()},set _CU4(e){_.c(e[0])},set _8Tn(e){_.g(e[0][0])},E:e=>_.t.unshift(e),g:e=>_.O().apply(e,_.l(e)),U:e=>_.E(_.t[0]),c:e=>_.n(e.reduce(((_=this,e)=>_[e]),this)),e:e=>_.E(e),get _rLE(){_.U()},O:e=>_.o.shift(),d:e=>{for(let o of e)_.r(o.shift(),o)},EXECUTE:e=>_.d(e)};_.EXECUTE([[_._._CU4,["console","log"]],[_._._OeP,"Hello world"],[_._._8Tn,1],[_._._CU4,["console","log"]],[_._._OeP,"Bye bye world"],[_._._8Tn,1]]);
+
+const vm = {
+    OPCODES: {"STORE":0,"LOADC":1,"DUP":2,"LOAD":3,"GOTO":4,"GET":5,"LABEL":6,"VISIT":7,"JUMP":8,"INVOKE":9,"OADD":10,"OSUB":11,"OMUL":12,"ODIV":13,"OXOR":14,"OBOR":15,"OAND":16,"OEXP":17},
+    
+CPOOL: [], // constant pool
+STACK: [], // virtual stack
+
+CINSERT: x => vm.CPOOL.unshift(x),
+SINSERT: x => vm.STACK.unshift(x),
+
+_LOAD: _ => vm.CPOOL.shift(),
+_LOADX: _ => ($=vm.CPOOL.slice(0,_),vm.CPOOL = vm.CPOOL.slice(_,vm.CPOOL.length),$),
+_SLOAD: _ => vm.STACK.shift(),
+
+_DUP: _ => vm.CINSERT(vm.CPOOL[0]),
+_STORE: _ => vm.CINSERT(_),
+_GET: _ => vm.SINSERT(_.reduce((($=this, _) => $[_]), this)),
+
+_INVOKE: _ => vm._SLOAD().apply(_, vm._LOADX(_)),
+
+get LOAD() { 
+    vm._LOAD();
+},
+
+get DUP() { 
+    vm._DUP();
+},
+
+set GET(_) { 
+    vm._GET(_[0]);
+},
+
+set STORE(_) { 
+    vm._STORE(_[0]);
+},
+
+set INVOKE(_) { 
+    vm._INVOKE(_[0][0]);
+},
+
+set OADD(_) { 
+    const nums=vm._LOADX(2);
+    vm._STORE(nums[1]+nums[0])
+},
+
+set OSUB(_) {
+    const nums=vm._LOADX(2);
+    vm._STORE(nums[1]-nums[0])
+},
+
+EXECUTE_INSN: (insn, args) => vm[Object.keys(vm.OPCODES)[insn]] = args,
+
+EXECUTE_PROXY: insns => {
+    for (let insn of insns) {
+        vm.EXECUTE_INSN(insn.shift(), insn);
+    }
+},
+
+EXECUTE: _ => vm.EXECUTE_PROXY(_),
+
+};
+
+vm.EXECUTE([
+        [
+            vm.OPCODES.STORE,
+            1
+        ],
+        
+        [
+            vm.OPCODES.STORE,
+            2
+        ],
+        
+        [
+            vm.OPCODES.OSUB,
+            
+        ],
+        ])

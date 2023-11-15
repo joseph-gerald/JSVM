@@ -40,7 +40,7 @@ var options: MinifyOptions = {
     },
     format: {
         preamble: `/* JOVM */`,
-        beautify: false,
+        beautify: true,
         semicolons: true,
     }
 }
@@ -50,23 +50,41 @@ async function minify(code: string) {
 }
 
 const ORIGINAL_OPCODES = {
-    STORE: 0,    // store to constant pool
+    STORE: 0,    // store to constant pool / heap
     LOADC: 1,    // store to stack
-    DUP: 2,   // duplicate item from stack
-    LOAD: 3,  // load from top of stack
-    GOTO: 4,  // jump to bytecode index
-    GET: 5,   // fetch from global context
-    LABEL: 6, // Label
-    VISIT: 7, // Visit label and return back
-    JUMP: 8,  // Jump to label
-    INVOKE: 9,// Invoke Function
+    DUP: 2,      // duplicate item from stack
+    LOAD: 3,     // load from top of stack
+    GOTO: 4,     // jump to bytecode index
+    GET: 5,      // fetch from global context
+
+    // Control Flow
+
+    LABEL: 6,    // Label
+    VISIT: 7,    // Visit label and return back
+    JUMP: 8,     // Jump to label
+    INVOKE: 9,   // Invoke Function
+
+    // Math
+
+    OADD: 10,   // Operation: Add
+    OSUB: 11,   // Operation: Subtract
+    OMUL: 12,   // Operation: Multiply
+    ODIV: 13,   // Operation: Division
+    OXOR: 14,   // Operation: Bitwise XOR
+    OBOR: 15,   // Operation: Bitwise OR
+    OAND: 16,   // Operation: Bitwise And
+    OEXP: 17,   // Operation: Exponents
 };
 
 const OPCODES : { [key: string]: any } = structuredClone(ORIGINAL_OPCODES);
 
-for (let key of Object.keys(OPCODES)) {
-    OPCODES[string_utils.make_large_string(string_utils.calculateChecksum(key),3)] = OPCODES[key];
-    delete OPCODES[key]
+const shuffle = false;
+
+if(shuffle) {
+    for (let key of Object.keys(OPCODES)) {
+        OPCODES[string_utils.make_large_string(string_utils.calculateChecksum(key),3)] = OPCODES[key];
+        delete OPCODES[key]
+    }
 }
 
 const OPCODE_KEYS = Object.keys(OPCODES);
@@ -91,7 +109,7 @@ const identifiers : { [key: string]: any } = {
     _INVOKE: "_INVOKE",
 
     EXECUTE_INSN: "EXECUTE_INSN",
-    EXECUTE: "EXECUTE",
+    EXECUTE: "EXECUTE_PROXY",
 }
 
 const getInstruction = (x: any) => {
@@ -99,13 +117,13 @@ const getInstruction = (x: any) => {
     return `vm.${identifiers.OPCODES}.${OPCODE}`;
 }
 
-for (let key of Object.keys(identifiers)) {
-    console.log(identifiers[key])
-    identifiers[key] = string_utils.make_large_string(string_utils.calculateChecksum(key),3);
-    console.log(identifiers[key])
+if(shuffle) {
+    for (let key of Object.keys(identifiers)) {
+        identifiers[key] = string_utils.make_large_string(string_utils.calculateChecksum(key),3);
+    }
 }
 
-const vmBody = string_utils.shuffleArray(`
+let vmBody = `
 ${identifiers.CPOOL}: [], // constant pool | - SPLIT >
 ${identifiers.STACK}: [], // virtual stack | - SPLIT >
 
@@ -142,6 +160,16 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) {
     vm.${identifiers._INVOKE}(_[0][0]);
 }, | - SPLIT >
 
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.OADD]}(_) { 
+    const nums=vm.${identifiers._LOADX}(2);
+    vm._STORE(nums[1]+nums[0])
+}, | - SPLIT >
+
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.OSUB]}(_) {
+    const nums=vm.${identifiers._LOADX}(2);
+    vm._STORE(nums[1]-nums[0])
+}, | - SPLIT >
+
 ${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(vm.${identifiers.OPCODES})[insn]] = args, | - SPLIT >
 
 ${identifiers.EXECUTE}: insns => {
@@ -151,12 +179,14 @@ ${identifiers.EXECUTE}: insns => {
 },
 
 EXECUTE: _ => vm.${identifiers.EXECUTE}(_),
-`.split(" | - SPLIT >"))
+`.split(" | - SPLIT >")
+
+if(shuffle) vmBody = string_utils.shuffleArray(vmBody);
 
 const vmCode = `
 const vm = {
     ${identifiers.OPCODES}: ${JSON.stringify(OPCODES)},
-    ${vmBody.join("\n")}
+    ${vmBody.join("")}
 };
 `
 

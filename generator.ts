@@ -6,7 +6,7 @@ import code_utils from "./utils/code_utils";
 
 function handleMemberExpression(node: types.Node) {
     let keys: string[] = [];
-
+    
     if(types.isMemberExpression(node)) {
         if(types.isIdentifier(node.object)) {
             keys.push(node.object.name);
@@ -18,7 +18,7 @@ function handleMemberExpression(node: types.Node) {
             }
         }
     }
-
+    console.log(keys)
     return JSON.stringify(keys);
 }
 
@@ -61,6 +61,7 @@ export const transform = async (code: string) => {
 
                     let args: any[] = [];
                     
+                    // arguments of call
                     for (let arg of node.arguments) {
                         if(types.isIdentifier(arg)) {
                             args.push("identifier in args");
@@ -68,11 +69,19 @@ export const transform = async (code: string) => {
                             args.push(arg.value);
                         } else if(types.isNumericLiteral(arg)) {
                             args.push(arg.value);
+                        } else {
+                            console.log("Argument type not implemented: " + arg.type)
                         }
                     }
 
+                    // coolObject.coolFunction()
                     if(types.isMemberExpression(node.callee)) {
                         addInstruction("GET", handleMemberExpression(node.callee))
+                    }
+
+                    // coolFunction()
+                    if(types.isIdentifier(node.callee)) {
+                        addInstruction("GET", JSON.stringify([node.callee.name]))
                     }
 
                     for (let arg of args) {
@@ -81,8 +90,30 @@ export const transform = async (code: string) => {
 
                     addInstruction("INVOKE", [args.length])
                     break;
-                case "MemberExpression":
+                case "BinaryExpression":
+                    if(!types.isBinaryExpression(node)) return;
 
+                    if(types.isNumericLiteral(node.left)) {
+                        addInstruction("STORE", node.left.value);
+                    }
+
+                    
+                    if(types.isNumericLiteral(node.right)) {
+                        addInstruction("STORE", node.right.value);
+                    }
+
+                    const operations : { [key: string]: any } = {
+                        "+": "OADD",
+                        "-": "OSUB",
+                        "*": "OMUL",
+                        "/": "ODIV",
+                        "^": "OXOR",
+                        "|": "OBOR",
+                        "&": "OAND",
+                        "**": "OEXP"
+                    }
+
+                    addInstruction(operations[node.operator],"");
                     break;
 
                 // Default case for unhandled node types
@@ -97,7 +128,7 @@ export const transform = async (code: string) => {
 
     output += "])";
 
-    output = await code_utils.minify(output)
+    //output = await code_utils.minify(output)
 
     return output;
 };
