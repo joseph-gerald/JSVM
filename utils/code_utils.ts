@@ -40,7 +40,7 @@ var options: MinifyOptions = {
     },
     format: {
         preamble: `/* JOVM */`,
-        beautify: true,
+        beautify: false,
         semicolons: true,
     }
 }
@@ -90,12 +90,13 @@ const identifiers : { [key: string]: any } = {
 
     _INVOKE: "_INVOKE",
 
-    EXECUTE_INSN: "EXECUTE_INSN"
+    EXECUTE_INSN: "EXECUTE_INSN",
+    EXECUTE: "EXECUTE",
 }
 
 const getInstruction = (x: any) => {
     const OPCODE = OPCODE_KEYS[Object.keys(ORIGINAL_OPCODES).indexOf(x)]; // OPCODES gets mangled so have to comapre to original
-    return `${identifiers.OPCODES}.${OPCODE}`;
+    return `vm.${identifiers.OPCODES}.${OPCODE}`;
 }
 
 for (let key of Object.keys(identifiers)) {
@@ -141,19 +142,20 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) {
     vm.${identifiers._INVOKE}(_[0][0]);
 }, | - SPLIT >
 
-${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(${identifiers.OPCODES})[insn]] = args, | - SPLIT >
+${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(vm.${identifiers.OPCODES})[insn]] = args, | - SPLIT >
 
-EXECUTE: insns => {
+${identifiers.EXECUTE}: insns => {
     for (let insn of insns) {
         vm.${identifiers.EXECUTE_INSN}(insn.shift(), insn);
     }
 },
+
+EXECUTE: _ => vm.${identifiers.EXECUTE}(_),
 `.split(" | - SPLIT >"))
 
 const vmCode = `
-const ${identifiers.OPCODES} = ${JSON.stringify(OPCODES)}
-
 const vm = {
+    ${identifiers.OPCODES}: ${JSON.stringify(OPCODES)},
     ${vmBody.join("\n")}
 };
 `
