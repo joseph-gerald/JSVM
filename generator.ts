@@ -1,44 +1,83 @@
 import { parse } from "@babel/parser"
 import * as types from "@babel/types";
 import traverse from "@babel/traverse"
+import fs from "fs";
 
 import code_utils from "./utils/code_utils";
 
 function handleMemberExpression(node: types.Node) {
     let keys: string[] = [];
-    
-    if(types.isMemberExpression(node)) {
-        if(types.isIdentifier(node.object)) {
+
+    if (types.isMemberExpression(node)) {
+        if (types.isIdentifier(node.object)) {
             keys.push(node.object.name);
-            
-            if(types.isIdentifier(node.property)) {
+
+            if (types.isIdentifier(node.property)) {
                 keys.push(node.property.name);
-            } else if(types.isStringLiteral(node.property)) {
+            } else if (types.isStringLiteral(node.property)) {
                 keys.push(node.property.value);
             }
         }
     }
-    console.log(keys)
+    //console.log(keys)
     return JSON.stringify(keys);
 }
 
+function handleBinaryExpression(node: types.BinaryExpression) {
+
+    let instructions: any[] = [];
+
+    for (let subNode of [node.left, node.right]) {
+        if (types.isNumericLiteral(subNode)) {
+            instructions.push(["STORE", subNode.value])
+        }
+
+        if (types.isStringLiteral(subNode)) {
+            instructions.push(["STORE", '"' + subNode.value + '"'])
+        }
+
+        if (types.isBinaryExpression(subNode)) {
+            instructions.push(...handleBinaryExpression(subNode))
+        }
+    }
+
+    const operations: { [key: string]: any } = {
+        "+": "OADD",
+        "-": "OSUB",
+        "*": "OMUL",
+        "/": "ODIV",
+        "^": "OXOR",
+        "|": "OBOR",
+        "&": "OAND",
+        "**": "OEXP"
+    }
+
+    instructions.push([operations[node.operator], ""])
+
+    return instructions;
+}
+
+function handleIdentifier(node: types.Identifier) {
+    return ["READ_REGISTRY",'"'+node.name+'"']
+}
+
 export const transform = async (code: string) => {
+    const state = btoa(Math.random().toString());
     const ast = parse(code, {
         // sourceType: 'module',
         plugins: ["jsx"],
     });
 
-    let output = "vm.EXECUTE([";
+    let output = "";
 
     const handledNodeTypes = new Set();
 
-    const addInstruction = (instruction: string, args: any) => {
+    const addInstruction = (instruction: string, args: any = null) => {
         output += `
         [
-            ${code_utils.getInstruction(instruction)},
-            ${args}
-        ],
-        `
+            ${code_utils.getInstruction(instruction)},${args==null ? '' : '\n            '+args}
+        ],`
+        return [instruction, args]
     }
 
     traverse(ast, {
@@ -47,73 +86,71 @@ export const transform = async (code: string) => {
             const nodeType = node.type;
 
             // Handle specific node types
-            console.log("Node -> " + nodeType)
+            //console.log("Node -> " + nodeType)
             switch (nodeType) {
-                case "IfStatement":
+                case "VariableDeclaration":
+                    // kinda useless cause we dont care of its type (const,let,var)
+                    break;
+                case "VariableDeclarator":
+                    if (!types.isVariableDeclarator(node)) return;
+
+                    const identifier = (node.id as types.Identifier).name;
+                    
+                    if(types.isStringLiteral(node.init) || types.isNumericLiteral(node.init)) {
+                        addInstruction("STORE", '"'+node.init.value+'"');
+                        addInstruction("STORE", '"'+identifier+'"');
+                        addInstruction("REGISTER");
+                    }
+
+                    if(types.isIdentifier(node.init)) {
+                        console.log("Identifier as variable decleration!")
+                    }
+                    
                     break;
                 case "Identifier":
                     break;
                 case "Program":
-                    output = code_utils.vmCode + "\n" + output;
+                    output = `${code_utils.vmCode}\nend_of_vm_${state}_;\n\nvm.EXECUTE([${output}`;
                     break;
                 case "CallExpression":
-                    if(!types.isCallExpression(node)) return;
+                    if (!types.isCallExpression(node)) return;
+
+                    // coolObject.coolFunction()
+                    if (types.isMemberExpression(node.callee)) {
+                        addInstruction("GET", handleMemberExpression(node.callee))
+                    }
+
+                    // coolFunction()
+                    if (types.isIdentifier(node.callee)) {
+                        addInstruction("GET", JSON.stringify([node.callee.name]))
+                    }
 
                     let args: any[] = [];
-                    
+
                     // arguments of call
                     for (let arg of node.arguments) {
-                        if(types.isIdentifier(arg)) {
-                            args.push("identifier in args");
-                        } else if(types.isStringLiteral(arg)) {
-                            args.push(arg.value);
-                        } else if(types.isNumericLiteral(arg)) {
-                            args.push(arg.value);
+                        if (types.isIdentifier(arg)) {
+                            console.log("identifier: " + arg.name)
+                            args.push(addInstruction.apply(0, handleIdentifier(arg) as any))
+                        } else if (types.isStringLiteral(arg)) {
+                            args.push(addInstruction("STORE", '"' + arg.value + '"'))
+                        } else if (types.isNumericLiteral(arg)) {
+                            args.push(addInstruction("STORE", arg.value))
+                        } else if (types.isBinaryExpression(arg)) {
+                            const instructions = handleBinaryExpression(arg);
+
+                            for (const instruction of instructions) {
+                                args.push(addInstruction.apply(null, instruction));
+                            }
                         } else {
                             console.log("Argument type not implemented: " + arg.type)
                         }
                     }
 
-                    // coolObject.coolFunction()
-                    if(types.isMemberExpression(node.callee)) {
-                        addInstruction("GET", handleMemberExpression(node.callee))
-                    }
-
-                    // coolFunction()
-                    if(types.isIdentifier(node.callee)) {
-                        addInstruction("GET", JSON.stringify([node.callee.name]))
-                    }
-
-                    for (let arg of args) {
-                        addInstruction("STORE", typeof arg == "string" ? '"' + arg + '"' : arg)
-                    }
-
                     addInstruction("INVOKE", [args.length])
                     break;
                 case "BinaryExpression":
-                    if(!types.isBinaryExpression(node)) return;
-
-                    if(types.isNumericLiteral(node.left)) {
-                        addInstruction("STORE", node.left.value);
-                    }
-
-                    
-                    if(types.isNumericLiteral(node.right)) {
-                        addInstruction("STORE", node.right.value);
-                    }
-
-                    const operations : { [key: string]: any } = {
-                        "+": "OADD",
-                        "-": "OSUB",
-                        "*": "OMUL",
-                        "/": "ODIV",
-                        "^": "OXOR",
-                        "|": "OBOR",
-                        "&": "OAND",
-                        "**": "OEXP"
-                    }
-
-                    addInstruction(operations[node.operator],"");
+                    if (!types.isBinaryExpression(node)) return;
                     break;
 
                 // Default case for unhandled node types
@@ -127,8 +164,19 @@ export const transform = async (code: string) => {
     });
 
     output += "])";
+    console.log(output)
 
-    //output = await code_utils.minify(output)
+    output = await code_utils.minify(output)
+
+    console.log(output)
+    const splitted = output.split(`end_of_vm_${state}`);
+    console.log(splitted)
+    const vm = splitted[0];
+    const bytecode = splitted[1];
+    output = splitted.join("");
+
+    fs.writeFileSync("output/vm.js", vm);
+    fs.writeFileSync("output/bytecode.js", bytecode);
 
     return output;
 };

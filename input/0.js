@@ -1,5 +1,3 @@
-1-2
-/*
-console.log(console.memory.totalJSHeapSize)
-console.log(1+2)
-*/
+let number = 3;
+
+console.log(number)
