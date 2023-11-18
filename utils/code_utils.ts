@@ -3,9 +3,11 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
+const shuffle = true; // false for debug
+
 const mangleSettings: MangleOptions = {
     eval: true,
-    properties: true,
+    properties: shuffle,
     reserved: ["submitCaptcha"],
 
 };
@@ -35,7 +37,7 @@ var options: MinifyOptions = {
     },
     format: {
         preamble: `/* JOVM */`,
-        beautify: false,
+        beautify: !shuffle,
         semicolons: true,
     }
 }
@@ -43,8 +45,6 @@ var options: MinifyOptions = {
 async function minify(code: string) {
     return (await terser.minify(code, options)).code as string;
 }
-
-const shuffle = true; // false for debug
 
 let ORIGINAL_OPCODES : { [key: string]: any } = {
     STORE: 0,    // store to constant pool / heap
@@ -126,6 +126,7 @@ const identifiers : { [key: string]: any } = {
     READ_REGISTRY: "READ_REGISTRY",
 
     EXECUTE_INSN: "EXECUTE_INSN",
+    INSN_EXECUTOR: "INSN_EXECUTOR",
     EXECUTE: "EXECUTE_PROXY",
 }
 
@@ -221,10 +222,10 @@ ${MATH_OPERATIONS}
 
 ${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(vm.${identifiers.OPCODES})[insn]] = args, | - SPLIT >
 
+${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.EXECUTE_INSN}(_.shift(), _), | - SPLIT >
+
 ${identifiers.EXECUTE}: insns => {
-    for (let insn of insns) {
-        vm.${identifiers.EXECUTE_INSN}(insn.shift(), insn);
-    }
+    insns.map(vm.${identifiers.INSN_EXECUTOR})
 },
 
 EXECUTE: _ => vm.${identifiers.EXECUTE}(_),

@@ -62,7 +62,7 @@ function handleIdentifier(node: types.Identifier) {
 }
 
 export const transform = async (code: string) => {
-    const state = btoa(Math.random().toString());
+    const state = btoa(Math.random().toString()).split("=").join("");
     const ast = parse(code, {
         // sourceType: 'module',
         plugins: ["jsx"],
@@ -110,7 +110,7 @@ export const transform = async (code: string) => {
                 case "Identifier":
                     break;
                 case "Program":
-                    output = `${code_utils.vmCode}\nend_of_vm_${state}_;\n\nvm.EXECUTE([${output}`;
+                    output = `${code_utils.vmCode}\nend_of_vm_${state}\nvm.EXECUTE([${output}`;
                     break;
                 case "CallExpression":
                     if (!types.isCallExpression(node)) return;
@@ -164,13 +164,14 @@ export const transform = async (code: string) => {
     });
 
     output += "])";
-    console.log(output)
+    //console.log(output)
 
     output = await code_utils.minify(output)
 
-    console.log(output)
     const splitted = output.split(`end_of_vm_${state}`);
-    console.log(splitted)
+    console.log(splitted[1])
+    splitted[1] = splitted[1].slice(splitted[1].charAt(1) == " " ? 2 : 1)
+    console.log(splitted[1])
     const vm = splitted[0];
     const bytecode = splitted[1];
     output = splitted.join("");

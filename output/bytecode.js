@@ -1,1 +1,1 @@
-_,_.N([[_._.o,"3"],[_._.o,"number"],[_._.J],[_._.C,["console","log"]],[_._.P,"number"],[_._.t,1]]);
+_.v([[_._.u,"3"],[_._.u,"number"],[_._.Z],[_._.A,["console","log"]],[_._.g,"number"],[_._.P,1],[_._.A,["console","log"]],[_._.u,"Hello Body"],[_._.P,1],[_._.A,["console","log"]],[_._.g,"number"],[_._.P,1]]);
