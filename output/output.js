@@ -19,16 +19,17 @@ const E = {
         OBOR: 15,
         OAND: 16,
         OEXP: 17,
-        REGISTER: 18,
-        READ_REGISTRY: 19,
-        AND: 20,
-        OR: 21,
-        OEQ: 22,
-        OIQ: 23,
-        OGT: 24,
-        OGE: 25,
+        OMOD: 18,
+        REGISTER: 19,
+        READ_REGISTRY: 20,
+        AND: 21,
+        OR: 22,
+        OEQ: 23,
+        OIQ: 24,
+        OGT: 25,
+        OGE: 26,
         OLT: 27,
-        OLE: 27
+        OLE: 28
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -50,7 +51,7 @@ const E = {
     _DUP: O => E.CINSERT(E.CPOOL[0]),
     _STORE: O => E.CINSERT(O),
     _GET: O => E.SINSERT(O.reduce(((O = E.GETTHIS, T) => O[T]), E.GETTHIS)),
-    _INVOKE: O => E.APPLIER([ E._SLOAD(), O, E._LOADX(O) ]),
+    _INVOKE: O => E.APPLIER([ E._SLOAD(), O, E._LOADX(O).reverse() ]),
     _REGISTER: O => E.REGISTRY[E.HASH(E._LOAD())] = E._LOAD(),
     _READ_REGISTRY: O => E._STORE(E.REGISTRY[E.HASH(O)] ?? E.GETTHIS[O]),
     _CREATE_LABEL: O => E.LINSERT(O),
@@ -111,6 +112,9 @@ const E = {
     set OAND(O) {
         E.OPERATE([ O, (E, O) => E & O ]);
     },
+    set OMOD(O) {
+        E.OPERATE([ O, (E, O) => E % O ]);
+    },
     set OEXP(O) {
         E.OPERATE([ O, (E, O) => E ** O ]);
     },
@@ -132,7 +136,7 @@ const E = {
     set OGE(O) {
         E.OPERATE([ O, (E, O) => E >= O ]);
     },
-    set OLE(O) {
+    set OLT(O) {
         E.OPERATE([ O, (E, O) => O > E ]);
     },
     set OLE(O) {
@@ -153,4 +157,4 @@ const E = {
     EXECUTE: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
 };
 
-E.EXECUTE([ [ E.OPCODES.STORE, "0" ], [ E.OPCODES.STORE, "age" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.GET, [ "console", "log" ] ], [ E.OPCODES.STORE, "Can not drink yet" ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.GET, [ "console", "log" ] ], [ E.OPCODES.STORE, "Can drink now!" ], [ E.OPCODES.INVOKE, 1 ] ]);
+E.EXECUTE([ [ E.OPCODES.GET, [ "console", "log" ] ], [ E.OPCODES.STORE, 1 ], [ E.OPCODES.STORE, 2 ], [ E.OPCODES.INVOKE, 2 ] ]);

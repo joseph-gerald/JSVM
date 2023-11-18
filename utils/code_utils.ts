@@ -46,7 +46,7 @@ async function minify(code: string) {
     return (await terser.minify(code, options)).code as string;
 }
 
-let ORIGINAL_OPCODES : { [key: string]: any } = {
+let ORIGINAL_OPCODES: { [key: string]: any } = {
     STORE: 0,    // store to constant pool / heap
     DUP: 1,      // duplicate item from stack
     LOAD: 2,     // load from top of stack
@@ -71,22 +71,23 @@ let ORIGINAL_OPCODES : { [key: string]: any } = {
     OBOR: 15,   // Operation: Bitwise OR
     OAND: 16,   // Operation: Bitwise And
     OEXP: 17,   // Operation: Exponents
+    OMOD: 18,   // Operation: Modulo
 
-    REGISTER: 18,
-    READ_REGISTRY: 19,
+    REGISTER: 19,
+    READ_REGISTRY: 20,
 
     // Logical Operations
-    AND: 20,   // Operation: And
-    OR : 21,   // Operation: Or
-    OEQ: 22,   // Operation: Equality
-    OIQ: 23,   // Operation: Inequality
-    OGT: 24,   // Operation: Greater Than
-    OGE: 25,   // Operation: Greater / Equal
+    AND: 21,   // Operation: And
+    OR: 22,   // Operation: Or
+    OEQ: 23,   // Operation: Equality
+    OIQ: 24,   // Operation: Inequality
+    OGT: 25,   // Operation: Greater Than
+    OGE: 26,   // Operation: Greater / Equal
     OLT: 27,   // Operation: Less Than
-    OLE: 27,   // Operation: Less / Equal
+    OLE: 28,   // Operation: Less / Equal
 };
 
-if(shuffle) {
+if (shuffle) {
     const opcodes_ids = string_utils.shuffleArray(Object.keys(ORIGINAL_OPCODES));
 
     ORIGINAL_OPCODES = {}
@@ -98,18 +99,18 @@ if(shuffle) {
 
 //console.log(ORIGINAL_OPCODES)
 
-const OPCODES : { [key: string]: any } = structuredClone(ORIGINAL_OPCODES);
+const OPCODES: { [key: string]: any } = structuredClone(ORIGINAL_OPCODES);
 
-if(shuffle) {
+if (shuffle) {
     for (let key of Object.keys(OPCODES)) {
-        OPCODES[string_utils.make_large_string(string_utils.calculateChecksum(key),3)] = OPCODES[key];
+        OPCODES[string_utils.make_large_string(string_utils.calculateChecksum(key), 3)] = OPCODES[key];
         delete OPCODES[key]
     }
 }
 
 const OPCODE_KEYS = Object.keys(OPCODES);
 
-const identifiers : { [key: string]: any } = {
+const identifiers: { [key: string]: any } = {
     OPCODE_KEYS: "OPCODE_KEYS",
     OPCODES: "OPCODES",
     HASH: "HASH",
@@ -167,16 +168,20 @@ const identifiers : { [key: string]: any } = {
 
 const getInstruction = (x: any) => {
     const OPCODE = OPCODE_KEYS[Object.keys(ORIGINAL_OPCODES).indexOf(x)]; // OPCODES gets mangled so have to comapre to original
-    return `vm.${identifiers.OPCODES}.${OPCODE}`;
-}
-
-if(shuffle) {
-    for (let key of Object.keys(identifiers)) {
-        identifiers[key] = string_utils.make_large_string(string_utils.calculateChecksum(key),3);
+    if (shuffle) {
+        return OPCODES[OPCODE];
+    } else {
+        return `vm.${identifiers.OPCODES}.${OPCODE}`;
     }
 }
 
-const operations : { [key: string]: any } = {
+if (shuffle) {
+    for (let key of Object.keys(identifiers)) {
+        identifiers[key] = string_utils.make_large_string(string_utils.calculateChecksum(key), 3);
+    }
+}
+
+const operations: { [key: string]: any } = {
     // Math
     "+": "OADD",
     "-": "OSUB",
@@ -185,16 +190,17 @@ const operations : { [key: string]: any } = {
     "^": "OXOR",
     "|": "OBOR",
     "&": "OAND",
+    "%": "OMOD",
     "**": "OEXP",
 
-    // Logical
+    // Logic
     "&&": "AND",
     "||": "OR",
     "==": "OEQ",
     "!=": "OIQ",
-    ">" : "OGT",
+    ">": "OGT",
     ">=": "OGE",
-    "<" : "OLT",
+    "<": "OLT",
     "<=": "OLE"
 }
 
@@ -205,7 +211,7 @@ for (let operation of Object.keys(operations)) {
     /*
         const nums=vm.${identifiers._LOADX}(2);
     vm._STORE(nums[1]${operation}nums[0])
-    */ 
+    */
     MATH_OPERATIONS += `
 set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
     vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);
@@ -217,7 +223,7 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
 
 let vmBody = `
 /*@__MANGLE_PROP__*/
-${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1,-1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ "+_).join(",")}}, | - SPLIT >
+${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1, -1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ " + _).join(",")}}, | - SPLIT >
 
 ${identifiers.OP_INDEX}: 0, // index of operation | - SPLIT >
 ${identifiers.OPERATIONS}: [], // operations | - SPLIT >
@@ -245,7 +251,7 @@ ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]),
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => vm.${identifiers.SINSERT}(_.reduce((($=vm.${identifiers.GETTHIS}, _) => $[_]), vm.${identifiers.GETTHIS})), | - SPLIT >
 
-${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_)]), | - SPLIT >
+${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_).reverse()]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
 ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers.GETTHIS}[_]), | - SPLIT >
 
@@ -332,7 +338,7 @@ ${identifiers.EXECUTE}: _ => {
 EXECUTE: _ => vm.${identifiers.EXECUTE}(vm.${identifiers.OPERATIONS} = _),
 `.split(" | - SPLIT >")
 
-if(shuffle) vmBody = string_utils.shuffleArray(vmBody);
+if (shuffle) vmBody = string_utils.shuffleArray(vmBody);
 
 const vmCode = `
 const vm = {

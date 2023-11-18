@@ -1,4 +1,5 @@
 let iterations = 0;
+let jumpCount = 0;
 const base = 'abcdefghijklmnopqrstuvwxyz'.split('');
 base.sort(() => Math.random() - 0.5);
 
@@ -154,6 +155,12 @@ export default {
         }
 
         return '_' + btoa(encodeURI(result));
+    },
+    get_jump_address: function () {
+        //return this.make_large_string(Date.now() % 1000000, 5).slice(1)
+        //return this.make_circle_string(jumpCount++, 5)
+        //return this.getMangledAt(jumpCount++)
+        return this.make_base64_string(1+jumpCount++, 5)
     },
     make_money_string: function (index: number, length: number) {
         const characters = shuffleArray(["$", "_", "v", "V"]);
