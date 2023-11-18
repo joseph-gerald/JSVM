@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = false; // false for debug
+const shuffle = true; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -74,6 +74,16 @@ let ORIGINAL_OPCODES : { [key: string]: any } = {
 
     REGISTER: 18,
     READ_REGISTRY: 19,
+
+    // Logical Operations
+    AND: 20,   // Operation: And
+    OR : 21,   // Operation: Or
+    OEQ: 22,   // Operation: Equality
+    OIQ: 23,   // Operation: Inequality
+    OGT: 24,   // Operation: Greater Than
+    OGE: 25,   // Operation: Greater / Equal
+    OLT: 27,   // Operation: Less Than
+    OLE: 27,   // Operation: Less / Equal
 };
 
 if(shuffle) {
@@ -125,7 +135,11 @@ const identifiers : { [key: string]: any } = {
     REGISTER: "REGISTER",
     READ_REGISTRY: "READ_REGISTRY",
 
+    APPLIER: "APPLIER",
+    SHIFTER: "SHIFTER",
+
     EXECUTE_INSN: "EXECUTE_INSN",
+    EXECUTOR_ARGS: "EXECUTOR_ARGS",
     INSN_EXECUTOR: "INSN_EXECUTOR",
     EXECUTE: "EXECUTE_PROXY",
 }
@@ -142,6 +156,7 @@ if(shuffle) {
 }
 
 const operations : { [key: string]: any } = {
+    // Math
     "+": "OADD",
     "-": "OSUB",
     "*": "OMUL",
@@ -149,7 +164,17 @@ const operations : { [key: string]: any } = {
     "^": "OXOR",
     "|": "OBOR",
     "&": "OAND",
-    "**": "OEXP"
+    "**": "OEXP",
+
+    // Logical
+    "&&": "AND",
+    "||": "OR",
+    "==": "OEQ",
+    "!=": "OIQ",
+    ">" : "OGT",
+    ">=": "OGE",
+    "<" : "OLT",
+    "<=": "OLE"
 }
 
 let MATH_OPERATIONS = "";
@@ -162,7 +187,7 @@ for (let operation of Object.keys(operations)) {
     */ 
     MATH_OPERATIONS += `
 set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
-    vm._STORE(vm.${identifiers._LOADX}(2).reverse(_).reduce((a, b) => a ${operation} b))
+    vm.${identifiers._STORE}(vm.${identifiers._LOADX}(2).reverse(_).reduce((a, b) => a ${operation} b))
 }, | - SPLIT >
     `
 }
@@ -178,15 +203,15 @@ ${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt()))
 ${identifiers.CINSERT}: _ => vm.${identifiers.CPOOL}.unshift(_), | - SPLIT >
 ${identifiers.SINSERT}: _ => vm.${identifiers.STACK}.unshift(_), | - SPLIT >
 
-${identifiers._LOAD}: _ => vm.${identifiers.CPOOL}.shift(), | - SPLIT >
+${identifiers._LOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.CPOOL}), | - SPLIT >
 ${identifiers._LOADX}: _ => ($=vm.${identifiers.CPOOL}.slice(0,_),vm.${identifiers.CPOOL} = vm.${identifiers.CPOOL}.slice(_,vm.${identifiers.CPOOL}.length),$), | - SPLIT >
-${identifiers._SLOAD}: _ => vm.${identifiers.STACK}.shift(), | - SPLIT >
+${identifiers._SLOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.STACK}), | - SPLIT >
 
 ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]), | - SPLIT >
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => vm.${identifiers.SINSERT}(_.reduce((($=this, _) => $[_]), this)), | - SPLIT >
 
-${identifiers._INVOKE}: _ => vm.${identifiers._SLOAD}().apply(_, vm.${identifiers._LOADX}(_)), | - SPLIT >
+${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_)]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
 ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??this[_]), | - SPLIT >
 
@@ -212,21 +237,26 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) {
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.REGISTER]}(_) {
     vm.${identifiers._REGISTER}(_[0])
-},
+}, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.READ_REGISTRY]}(_) {
     vm.${identifiers._READ_REGISTRY}(_[0])
-},
+}, | - SPLIT >
 
 ${MATH_OPERATIONS}
 
+${identifiers.SHIFTER}: _ => _.shift(), | - SPLIT >
+${identifiers.APPLIER}: _ => vm.${identifiers.SHIFTER}(_).apply(vm.${identifiers.SHIFTER}(_),vm.${identifiers.SHIFTER}(_)), | - SPLIT >
+
 ${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(vm.${identifiers.OPCODES})[insn]] = args, | - SPLIT >
 
-${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.EXECUTE_INSN}(_.shift(), _), | - SPLIT >
+${identifiers.EXECUTOR_ARGS}: _ => [vm.${identifiers.SHIFTER}(_), _], | - SPLIT >
+
+${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.APPLIER}([vm.${identifiers.EXECUTE_INSN}, _,vm.${identifiers.EXECUTOR_ARGS}(_)]), | - SPLIT >
 
 ${identifiers.EXECUTE}: insns => {
     insns.map(vm.${identifiers.INSN_EXECUTOR})
-},
+}, | - SPLIT >
 
 EXECUTE: _ => vm.${identifiers.EXECUTE}(_),
 `.split(" | - SPLIT >")

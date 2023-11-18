@@ -1,92 +1,126 @@
 /* JOVM */
-const O = {
-    OPCODES: {
-        STORE: 0,
-        LOADC: 1,
-        DUP: 2,
-        LOAD: 3,
-        GOTO: 4,
-        GET: 5,
-        LABEL: 6,
-        VISIT: 7,
-        JUMP: 8,
-        INVOKE: 9,
-        OADD: 10,
-        OSUB: 11,
-        OMUL: 12,
-        ODIV: 13,
-        OXOR: 14,
-        OBOR: 15,
-        OAND: 16,
-        OEXP: 17,
-        REGISTER: 18,
-        READ_REGISTRY: 19
+const _ = {
+    _: {
+        t: 0,
+        o: 1,
+        l: 2,
+        W: 3,
+        g: 4,
+        i: 5,
+        p: 6,
+        T: 7,
+        X: 8,
+        C: 9,
+        D: 10,
+        F: 11,
+        K: 12,
+        h: 13,
+        I: 14,
+        N: 15,
+        m: 16,
+        u: 17,
+        J: 18,
+        M: 19,
+        O: 20,
+        P: 21,
+        U: 22,
+        v: 23,
+        A: 24,
+        R: 25,
+        S: 26,
+        V: 27
     },
-    CPOOL: [],
-    STACK: [],
-    REGISTRY: [],
-    HASH: O => btoa(btoa(btoa(O))).split("").map((O => O.charCodeAt())).reduce(((O, E) => (E ^ O / E | E & E | O << (O.length | O << E | 1e-5) << (O.length | 41 * O.length) << O * O) + "" + O)).split("").slice(6, 26).join(""),
-    CINSERT: E => O.CPOOL.unshift(E),
-    SINSERT: E => O.STACK.unshift(E),
-    _LOAD: E => O.CPOOL.shift(),
-    _LOADX: E => ($ = O.CPOOL.slice(0, E), O.CPOOL = O.CPOOL.slice(E, O.CPOOL.length),
-        $),
-    _SLOAD: E => O.STACK.shift(),
-    _DUP: E => O.CINSERT(O.CPOOL[0]),
-    _STORE: E => O.CINSERT(E),
-    _GET: E => O.SINSERT(E.reduce(((O = this, E) => O[E]), this)),
-    _INVOKE: E => O._SLOAD().apply(E, O._LOADX(E)),
-    _REGISTER: E => O.REGISTRY[O.HASH(O._LOAD())] = O._LOAD(),
-    _READ_REGISTRY: E => O._STORE(O.REGISTRY[O.HASH(E)] ?? this[E]),
-    get LOAD() {
-        return O._LOAD();
+    set V(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ > e)))
     },
-    get DUP() {
-        O._DUP();
+    set g(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ ** e)))
     },
-    set GET(E) {
-        O._GET(E[0]);
+    k: _ => _.shift(),
+    set N(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ | e)))
     },
-    set STORE(E) {
-        O._STORE(E[0]);
+    set O(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ / e)))
     },
-    set INVOKE(E) {
-        O._INVOKE(E[0]);
+    set R(e) {
+        _.q(e[0])
     },
-    set REGISTER(E) {
-        O._REGISTER(E[0]);
+    H: e => _.$[_.B(_.G())] = _.G(),
+    L: [],
+    $: [],
+    Z: e => {
+        e.map(_.__)
     },
-    set READ_REGISTRY(E) {
-        O._READ_REGISTRY(E[0]);
+    set i(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ >= e)))
     },
-    set OADD(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O + E)));
+    e_: e => _.k(_.L),
+    set v(e) {
+        _.s_(e[0])
     },
-    set OSUB(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O - E)));
+    set I(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => e > _)))
     },
-    set OMUL(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O * E)));
+    set S(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ * e)))
     },
-    set ODIV(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O / E)));
+    Y: e => _.t_(e),
+    o_: e => _.k(e).apply(_.k(e), _.k(e)),
+    set D(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ == e)))
     },
-    set OXOR(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O ^ E)));
+    set U(e) {
+        _.n_(e[0])
     },
-    set OBOR(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O | E)));
+    s_: e => _.o_([_.e_(), e, _.j(e)]),
+    get K() {
+        _.l_()
     },
-    set OAND(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O & E)));
+    a_: e => [_.k(e), e],
+    d_: e => _.Z(e),
+    __: e => _.o_([_.x_, e, _.a_(e)]),
+    n_: e => _.Y(_.$[_.B(e)] ?? this[e]),
+    W_: [],
+    g_: e => _.L.unshift(e),
+    t_: e => _.W_.unshift(e),
+    set W(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ != e)))
     },
-    set OEXP(E) {
-        O._STORE(O._LOADX(2).reverse(E).reduce(((O, E) => O ** E)));
+    x_: (e, s) => _[Object.keys(_._)[e]] = s,
+    G: e => _.k(_.W_),
+    q: e => _.g_(e.reduce(((_ = this, e) => _[e]), this)),
+    set u(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ && e)))
     },
-    EXECUTE_INSN: (E, S) => O[Object.keys(O.OPCODES)[E]] = S,
-    INSN_EXECUTOR: E => O.EXECUTE_INSN(E.shift(), E),
-    EXECUTE_PROXY: E => {
-        E.map(O.INSN_EXECUTOR);
+    set m(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ ^ e)))
     },
-    EXECUTE: E => O.EXECUTE_PROXY(E)
+    j: e => ($ = _.W_.slice(0, e), _.W_ = _.W_.slice(e, _.W_.length), $),
+    set F(e) {
+        _.Y(e[0])
+    },
+    set p(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ || e)))
+    },
+    set l(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => e >= _)))
+    },
+    set J(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ & e)))
+    },
+    set X(e) {
+        _.H(e[0])
+    },
+    get A() {
+        return _.G()
+    },
+    B: _ => btoa(btoa(btoa(_))).split("").map((_ => _.charCodeAt())).reduce(((_, e) => (e ^ _ / e | e & e | _ << (_.length | _ << e | 1e-5) << (_.length | 41 * _.length) << _ * _) + "" + _)).split("").slice(6, 26).join(""),
+    l_: e => _.t_(_.W_[0]),
+    set C(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ - e)))
+    },
+    set t(e) {
+        _.Y(_.j(2).reverse(e).reduce(((_, e) => _ + e)))
+    }
 };
