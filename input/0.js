@@ -1,5 +1,13 @@
-let number = 3;
+let age = 42;
+let text = "I am " + 42 + " years old"
 
-console.log(number)
-console.log("Hello Body")
-console.log(number)
+console.log(text)
+console.log("Hello | " + age)
+console.log(text)
+
+// Can drink in US
+if(age > 20) {
+    console.log("Yes")
+} else {
+    console.warn("Too Young")
+}

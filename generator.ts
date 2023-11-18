@@ -4,6 +4,7 @@ import traverse from "@babel/traverse"
 import fs from "fs";
 
 import code_utils from "./utils/code_utils";
+var beautify = require('js-beautify/js').js;
 
 function handleMemberExpression(node: types.Node) {
     let keys: string[] = [];
@@ -28,6 +29,10 @@ function handleBinaryExpression(node: types.BinaryExpression) {
     let instructions: any[] = [];
 
     for (let subNode of [node.left, node.right]) {
+        if (types.isIdentifier(subNode)) {
+            instructions.push(handleIdentifier(subNode));
+        }
+
         if (types.isNumericLiteral(subNode)) {
             instructions.push(["STORE", subNode.value])
         }
@@ -98,14 +103,22 @@ export const transform = async (code: string) => {
                     
                     if(types.isStringLiteral(node.init) || types.isNumericLiteral(node.init)) {
                         addInstruction("STORE", '"'+node.init.value+'"');
-                        addInstruction("STORE", '"'+identifier+'"');
-                        addInstruction("REGISTER");
                     }
 
                     if(types.isIdentifier(node.init)) {
-                        console.log("Identifier as variable decleration!")
+                        addInstruction.apply(0, handleIdentifier(node.init) as any);
                     }
                     
+                    if(types.isBinaryExpression(node.init)) {
+                        const instructions = handleBinaryExpression(node.init);
+
+                        for (const instruction of instructions) {
+                            addInstruction.apply(null, instruction);
+                        }
+                    }
+
+                    addInstruction("STORE", '"'+identifier+'"');
+                    addInstruction("REGISTER");
                     break;
                 case "Identifier":
                     break;
@@ -176,8 +189,8 @@ export const transform = async (code: string) => {
     const bytecode = splitted[1];
     output = splitted.join("");
 
-    fs.writeFileSync("output/vm.js", vm);
-    fs.writeFileSync("output/bytecode.js", bytecode);
+    fs.writeFileSync("output/vm.js", beautify(vm));
+    fs.writeFileSync("output/bytecode.js", beautify(bytecode));
 
     return output;
 };
