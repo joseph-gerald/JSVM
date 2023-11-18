@@ -1,2 +1,156 @@
 /* JOVM */
-const _={get _(){return _.t()},set o(e){_.g([e,(_,e)=>e>=_])},M:_=>structuredClone(_),get l(){return _.U([_.J.keys,_,[_.N]])},get O(){_.u()},set v(e){_.I(e[0])},K:e=>_.T[_.T.map((_=>_[0])).indexOf(e)][1],set Y(e){_.g([e,(_,e)=>e>_])},set Z(e){_.g([e,(_,e)=>_>=e])},j:e=>_.S(e)==_.N.C?_.D([_.S(e),_.G]):e,p:e=>_.U([_.M,e,[_.q[_.G++]]]),L:(e,t)=>_[_.l[e]]=t,g:e=>_.P(_.h(2).reverse(_.S(e)).reduce(_.S(e))),set i(e){_.g([e,(_,e)=>_+e])},A:e=>[_.S(e),e],F:e=>_.G=_.K(e),set R(e){_.g([e,(_,e)=>_||e])},m:e=>_.B[_.H(_.t())]=_.t(),set V(e){_.F(e[0])},P:e=>_.X(e),W:e=>{for(;_.G<_.q.length;)_.j(_.p());for(_.G=0;_.G<_.q.length;)_.$(_.p())},set k(e){_.g([e,(_,e)=>_^e])},set __(e){_.g([e,(_,e)=>_-e])},set e_(e){_.t()||_.F(e[0])},t_:e=>_.s_([_.o_,e]),t:e=>_.S(_.n_),set C(e){_.D},S:_=>_.shift(),set g_(e){_.g([e,(_,e)=>_|e])},J:Object,set r_(e){_.m(e[0])},G:0,set a_(e){_.M_(e[0])},c_:this,U:e=>_.S(e).apply(_.S(e),_.S(e)),D:e=>_.undefined(e),l_:e=>_.W(_.q=e),B:[],q:[],set d_(e){_.g([e,(_,e)=>_==e])},set x_(e){_.g([e,(_,e)=>_>e])},w_:e=>_.t_(e.reduce(((e=_.c_,t)=>e[t]),_.c_)),I:e=>_.U([_.U_(),e,_.h(e)]),set f_(e){_.g([e,(_,e)=>_*e])},T:[],$:e=>_.U([_.L,e,_.A(e)]),M_:e=>_.P(_.B[_.H(e)]??_.c_[e]),undefined:e=>_.s_([_.T,e]),U_:e=>_.S(_.o_),set J_(e){_.w_(e[0])},set N_(e){_.g([e,(_,e)=>_**e])},N:{Z:0,O_:1,i:2,v:3,__:4,V:5,J_:6,Y:7,a_:8,r_:9,_:10,R:11,d_:12,k:13,u_:14,f_:15,N_:16,x_:17,v_:18,e_:19,C:20,y_:21,O:22,o:23,E_:24,I_:25,g_:26,K_:27},s_:e=>_.S(e).unshift(_.S(e)),u:e=>_.X(_.n_[0]),set I_(e){_.g([e,(_,e)=>_&e])},o_:[],X:e=>_.s_([_.n_,e]),set y_(e){_.P(e[0])},h:e=>($=_.n_.slice(0,e),_.n_=_.n_.slice(e,_.n_.length),$),H:_=>btoa(btoa(btoa(_))).split("").map((_=>_.charCodeAt())).reduce(((_,e)=>(e^_/e|e&e|_<<(_.length|_<<e|1e-5)<<(_.length|41*_.length)<<_*_)+""+_)).split("").slice(6,26).join(""),n_:[],set u_(e){_.g([e,(_,e)=>_&&e])},set E_(e){_.g([e,(_,e)=>_/e])},set v_(e){_.g([e,(_,e)=>_!=e])}};_.l_([[_.N.y_,"1"],[_.N.y_,"age"],[_.N.r_],[_.N.y_,"I am "],[_.N.a_,"age"],[_.N.i],[_.N.y_," years old"],[_.N.i],[_.N.y_,"text"],[_.N.r_],[_.N.J_,["console","log"]],[_.N.a_,"text"],[_.N.v,1],[_.N.J_,["console","log"]],[_.N.y_,"Hello | "],[_.N.a_,"age"],[_.N.i],[_.N.v,3],[_.N.J_,["console","log"]],[_.N.a_,"text"],[_.N.v,1],[_.N.a_,"age"],[_.N.y_,20],[_.N.x_],[_.N.e_,"MnXKS"],[_.N.J_,["console","log"]],[_.N.y_,"Yes"],[_.N.v,1],[_.N.V,"QfdN8"],[_.N.C,"MnXKS"],[_.N.a_,"age"],[_.N.y_,3],[_.N.Y],[_.N.e_,"KqMOZ"],[_.N.J_,["console","warn"]],[_.N.y_,"Baby"],[_.N.v,1],[_.N.V,"8jxye"],[_.N.C,"KqMOZ"],[_.N.J_,["console","warn"]],[_.N.y_,"Too Young"],[_.N.v,1],[_.N.C,"8jxye"],[_.N.C,"QfdN8"]]);
+const E = {
+    OPCODES: {
+        STORE: 0,
+        DUP: 1,
+        LOAD: 2,
+        GOTO: 3,
+        GET: 4,
+        LABEL: 5,
+        VISIT: 6,
+        CJUMP: 7,
+        JUMP: 8,
+        INVOKE: 9,
+        OADD: 10,
+        OSUB: 11,
+        OMUL: 12,
+        ODIV: 13,
+        OXOR: 14,
+        OBOR: 15,
+        OAND: 16,
+        OEXP: 17,
+        REGISTER: 18,
+        READ_REGISTRY: 19,
+        AND: 20,
+        OR: 21,
+        OEQ: 22,
+        OIQ: 23,
+        OGT: 24,
+        OGE: 25,
+        OLT: 27,
+        OLE: 27
+    },
+    OP_INDEX: 0,
+    OPERATIONS: [],
+    CPOOL: [],
+    STACK: [],
+    REGISTRY: [],
+    LABELS: [],
+    GETTHIS: this,
+    OBJECT: Object,
+    OBJECT_CLONER: E => structuredClone(E),
+    HASH: E => btoa(btoa(btoa(E))).split("").map((E => E.charCodeAt())).reduce(((E, O) => (O ^ E / O | O & O | E << (E.length | E << O | 1e-5) << (E.length | 41 * E.length) << E * E) + "" + E)).split("").slice(6, 26).join(""),
+    CINSERT: O => E.UNSHIFTER([ E.CPOOL, O ]),
+    SINSERT: O => E.UNSHIFTER([ E.STACK, O ]),
+    LINSERT: O => E.UNSHIFTER([ E.LABELS, O ]),
+    _LOAD: O => E.SHIFTER(E.CPOOL),
+    _LOADX: O => ($ = E.CPOOL.slice(0, O), E.CPOOL = E.CPOOL.slice(O, E.CPOOL.length), 
+    $),
+    _SLOAD: O => E.SHIFTER(E.STACK),
+    _DUP: O => E.CINSERT(E.CPOOL[0]),
+    _STORE: O => E.CINSERT(O),
+    _GET: O => E.SINSERT(O.reduce(((O = E.GETTHIS, T) => O[T]), E.GETTHIS)),
+    _INVOKE: O => E.APPLIER([ E._SLOAD(), O, E._LOADX(O) ]),
+    _REGISTER: O => E.REGISTRY[E.HASH(E._LOAD())] = E._LOAD(),
+    _READ_REGISTRY: O => E._STORE(E.REGISTRY[E.HASH(O)] ?? E.GETTHIS[O]),
+    _CREATE_LABEL: O => E.LINSERT(O),
+    _FIND_LABEL: O => E.LABELS[E.LABELS.map((E => E[0])).indexOf(O)][1],
+    _JUMP: O => E.OP_INDEX = E._FIND_LABEL(O),
+    get OPCODE_KEYS() {
+        return E.APPLIER([ E.OBJECT.keys, E, [ E.OPCODES ] ]);
+    },
+    get LOAD() {
+        return E._LOAD();
+    },
+    get DUP() {
+        E._DUP();
+    },
+    set GET(O) {
+        E._GET(E.SHIFTER(O));
+    },
+    set STORE(O) {
+        E._STORE(E.SHIFTER(O));
+    },
+    set INVOKE(O) {
+        E._INVOKE(E.SHIFTER(O));
+    },
+    set REGISTER(O) {
+        E._REGISTER(E.SHIFTER(O));
+    },
+    set READ_REGISTRY(O) {
+        E._READ_REGISTRY(E.SHIFTER(O));
+    },
+    set LABEL(O) {
+        E._CREATE_LABEL;
+    },
+    set JUMP(O) {
+        E._JUMP(E.SHIFTER(O));
+    },
+    set CJUMP(O) {
+        E._LOAD() || E._JUMP(O[0]);
+    },
+    OPERATE: O => E._STORE(E._LOADX(2).reverse(E.SHIFTER(O)).reduce(E.SHIFTER(O))),
+    set OADD(O) {
+        E.OPERATE([ O, (E, O) => E + O ]);
+    },
+    set OSUB(O) {
+        E.OPERATE([ O, (E, O) => E - O ]);
+    },
+    set OMUL(O) {
+        E.OPERATE([ O, (E, O) => E * O ]);
+    },
+    set ODIV(O) {
+        E.OPERATE([ O, (E, O) => E / O ]);
+    },
+    set OXOR(O) {
+        E.OPERATE([ O, (E, O) => E ^ O ]);
+    },
+    set OBOR(O) {
+        E.OPERATE([ O, (E, O) => E | O ]);
+    },
+    set OAND(O) {
+        E.OPERATE([ O, (E, O) => E & O ]);
+    },
+    set OEXP(O) {
+        E.OPERATE([ O, (E, O) => E ** O ]);
+    },
+    set AND(O) {
+        E.OPERATE([ O, (E, O) => E && O ]);
+    },
+    set OR(O) {
+        E.OPERATE([ O, (E, O) => E || O ]);
+    },
+    set OEQ(O) {
+        E.OPERATE([ O, (E, O) => E == O ]);
+    },
+    set OIQ(O) {
+        E.OPERATE([ O, (E, O) => E != O ]);
+    },
+    set OGT(O) {
+        E.OPERATE([ O, (E, O) => E > O ]);
+    },
+    set OGE(O) {
+        E.OPERATE([ O, (E, O) => E >= O ]);
+    },
+    set OLE(O) {
+        E.OPERATE([ O, (E, O) => O > E ]);
+    },
+    set OLE(O) {
+        E.OPERATE([ O, (E, O) => O >= E ]);
+    },
+    SHIFTER: E => E.shift(),
+    UNSHIFTER: O => E.SHIFTER(O).unshift(E.SHIFTER(O)),
+    APPLIER: O => E.SHIFTER(O).apply(E.SHIFTER(O), E.SHIFTER(O)),
+    STORE_LABEL: O => E.SHIFTER(O) == E.OPCODES.LABEL ? E._CREATE_LABEL([ E.SHIFTER(O), E.OP_INDEX ]) : O,
+    GET_NEXT_INSTRUCTION: O => E.APPLIER([ E.OBJECT_CLONER, O, [ E.OPERATIONS[E.OP_INDEX++] ] ]),
+    EXECUTE_INSN: (O, T) => E[E.OPCODE_KEYS[O]] = T,
+    EXECUTOR_ARGS: O => [ E.SHIFTER(O), O ],
+    INSN_EXECUTOR: O => E.APPLIER([ E.EXECUTE_INSN, O, E.EXECUTOR_ARGS(O) ]),
+    EXECUTE_PROXY: O => {
+        for (;E.OP_INDEX < E.OPERATIONS.length; ) E.STORE_LABEL(E.GET_NEXT_INSTRUCTION());
+        for (E.OP_INDEX = 0; E.OP_INDEX < E.OPERATIONS.length; ) E.INSN_EXECUTOR(E.GET_NEXT_INSTRUCTION());
+    },
+    EXECUTE: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
+};
+
+E.EXECUTE([ [ E.OPCODES.STORE, "0" ], [ E.OPCODES.STORE, "age" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.GET, [ "console", "log" ] ], [ E.OPCODES.STORE, "Can not drink yet" ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.GET, [ "console", "log" ] ], [ E.OPCODES.STORE, "Can drink now!" ], [ E.OPCODES.INVOKE, 1 ] ]);

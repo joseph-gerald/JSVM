@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = true; // false for debug
+const shuffle = false; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -120,6 +120,7 @@ const identifiers : { [key: string]: any } = {
 
     CINSERT: "CINSERT",
     SINSERT: "SINSERT",
+    LINSERT: "LINSERT",
 
     _LOAD: "_LOAD",
     _LOADX: "_LOADX",
@@ -231,6 +232,7 @@ ${identifiers.OBJECT}: Object, | - SPLIT >
 ${identifiers.OBJECT_CLONER}: _ => structuredClone(_), | - SPLIT >
 
 ${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).split("").slice(6,26).join(''), | - SPLIT >
+
 ${identifiers.CINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.CPOOL},_]), | - SPLIT >
 ${identifiers.SINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.STACK},_]), | - SPLIT >
 ${identifiers.LINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.LABELS},_]), | - SPLIT >
@@ -265,23 +267,23 @@ get ${OPCODE_KEYS[ORIGINAL_OPCODES.DUP]}() {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.GET]}(_) { 
-    vm.${identifiers._GET}(_[0]);
+    vm.${identifiers._GET}(vm.${identifiers.SHIFTER}(_));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.STORE]}(_) { 
-    vm.${identifiers._STORE}(_[0]);
+    vm.${identifiers._STORE}(vm.${identifiers.SHIFTER}(_));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) { 
-    vm.${identifiers._INVOKE}(_[0]);
+    vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.REGISTER]}(_) {
-    vm.${identifiers._REGISTER}(_[0])
+    vm.${identifiers._REGISTER}(vm.${identifiers.SHIFTER}(_))
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.READ_REGISTRY]}(_) {
-    vm.${identifiers._READ_REGISTRY}(_[0])
+    vm.${identifiers._READ_REGISTRY}(vm.${identifiers.SHIFTER}(_))
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.LABEL]}(_) {
@@ -289,7 +291,7 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.LABEL]}(_) {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.JUMP]}(_) {
-    vm.${identifiers._JUMP}(_[0]);
+    vm.${identifiers._JUMP}(vm.${identifiers.SHIFTER}(_));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.CJUMP]}(_) {
