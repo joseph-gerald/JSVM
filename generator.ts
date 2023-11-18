@@ -4,6 +4,7 @@ import traverse from "@babel/traverse"
 import fs from "fs";
 
 import code_utils from "./utils/code_utils";
+import string_utils from "./utils/string_utils";
 var beautify = require('js-beautify/js').js;
 
 function handleMemberExpression(node: types.Node) {
@@ -45,14 +46,14 @@ function handleBinaryExpression(node: types.BinaryExpression) {
             instructions.push(...handleBinaryExpression(subNode))
         }
     }
-    
+
     instructions.push([code_utils.operations[node.operator], ""])
 
     return instructions;
 }
 
 function handleIdentifier(node: types.Identifier) {
-    return ["READ_REGISTRY",'"'+node.name+'"']
+    return ["READ_REGISTRY", '"' + node.name + '"']
 }
 
 export const transform = async (code: string) => {
@@ -69,7 +70,7 @@ export const transform = async (code: string) => {
     const addInstruction = (instruction: string, args: any = null) => {
         output += `
         [
-            ${code_utils.getInstruction(instruction)},${args==null ? '' : '\n            '+args}
+            ${code_utils.getInstruction(instruction)},${args == null ? '' : '\n            ' + args}
         ],`
         return [instruction, args]
     }
@@ -78,10 +79,11 @@ export const transform = async (code: string) => {
 
     const handleNode = (node: types.Node) => {
         const nodeType = node.type;
-        
-        if(handled.includes(node.loc)) return;
 
-        handled.push(node.loc);
+        if (handled.includes(node.loc)) {
+            console.log("SKIPPED: " + nodeType)
+            return;
+        }
 
         switch (nodeType) {
             case "VariableDeclaration":
@@ -90,8 +92,11 @@ export const transform = async (code: string) => {
             case "IfStatement":
                 if (!types.isIfStatement(node)) return;
 
+                const firstBlockEnd = string_utils.make_large_string(Date.now() % 1000000, 5).slice(1);
+                const end = string_utils.make_large_string(Date.now() % 1000000, 5).slice(1);
+
                 // handle test/condition
-                if(types.isBinaryExpression(node.test)) {
+                if (types.isBinaryExpression(node.test)) {
                     const instructions = handleBinaryExpression(node.test);
 
                     for (const instruction of instructions) {
@@ -99,44 +104,51 @@ export const transform = async (code: string) => {
                     }
                 }
 
-                if(types.isIdentifier(node.test)) {
+                addInstruction("CJUMP", '"' + firstBlockEnd + '"')
+
+                if (types.isIdentifier(node.test)) {
                     addInstruction.apply(0, handleIdentifier(node.test) as any);
                 }
 
-                if(types.isCallExpression(node.test)) {
+                if (types.isCallExpression(node.test)) {
 
                 }
 
                 // First block
-                
+
                 // if(...) {}
-                if(types.isBlockStatement(node.consequent)) {
-                    for (const subNode of node.consequent.body) {
-                        handleNode(subNode);
-                    }
-                }
-
                 // if(...) thing()
-                if(types.isExpressionStatement(node.consequent)) {
-
+                if (node.consequent) {
+                    handleNode(node.consequent);
                 }
 
+                addInstruction("JUMP", '"' + end + '"')
+                addInstruction("LABEL", '"' + firstBlockEnd + '"')
 
+                // Latter block
+
+                // if(...) {}
+                // if(...) thing()
+                if (node.alternate) {
+                    handleNode(node.alternate);
+                }
+
+                addInstruction("LABEL", '"' + end + '"')
                 break;
             case "VariableDeclarator":
                 if (!types.isVariableDeclarator(node)) return;
 
                 const identifier = (node.id as types.Identifier).name;
-                
-                if(types.isStringLiteral(node.init) || types.isNumericLiteral(node.init)) {
-                    addInstruction("STORE", '"'+node.init.value+'"');
+
+                if (types.isStringLiteral(node.init) || types.isNumericLiteral(node.init)) {
+                    addInstruction("STORE", '"' + node.init.value + '"');
                 }
 
-                if(types.isIdentifier(node.init)) {
+                if (types.isIdentifier(node.init)) {
                     addInstruction.apply(0, handleIdentifier(node.init) as any);
                 }
-                
-                if(types.isBinaryExpression(node.init)) {
+
+                if (types.isBinaryExpression(node.init)) {
                     const instructions = handleBinaryExpression(node.init);
 
                     for (const instruction of instructions) {
@@ -144,7 +156,7 @@ export const transform = async (code: string) => {
                     }
                 }
 
-                addInstruction("STORE", '"'+identifier+'"');
+                addInstruction("STORE", '"' + identifier + '"');
                 addInstruction("REGISTER");
                 break;
             case "Identifier":
@@ -192,14 +204,27 @@ export const transform = async (code: string) => {
             case "BinaryExpression":
                 if (!types.isBinaryExpression(node)) return;
                 break;
+            case "ExpressionStatement":
+                if (!types.isExpressionStatement(node)) return;
+                handleNode(node.expression);
+                break;
+            case "BlockStatement":
+                if(!types.isBlockStatement(node)) return;
 
+                for (const subNode of node.body) {
+                    handleNode(subNode);
+                }    
+                break;
             // Default case for unhandled node types
             default:
                 if (!handledNodeTypes.has(nodeType)) {
                     console.log(`${nodeType} not implemented`);
                     handledNodeTypes.add(nodeType);
                 }
+                return;
         }
+
+        handled.push(node.loc);
     }
 
     traverse(ast, {
@@ -217,7 +242,7 @@ export const transform = async (code: string) => {
 
     try {
         output = await code_utils.minify(output)
-    } catch (ignore) {}
+    } catch (ignore) { }
 
     const splitted = output.split(`end_of_vm_${state}`);
     console.log(splitted[1])

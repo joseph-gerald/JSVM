@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = false; // false for debug
+const shuffle = true; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -48,16 +48,16 @@ async function minify(code: string) {
 
 let ORIGINAL_OPCODES : { [key: string]: any } = {
     STORE: 0,    // store to constant pool / heap
-    LOADC: 1,    // store to stack
-    DUP: 2,      // duplicate item from stack
-    LOAD: 3,     // load from top of stack
-    GOTO: 4,     // jump to bytecode index
-    GET: 5,      // fetch from global context
+    DUP: 1,      // duplicate item from stack
+    LOAD: 2,     // load from top of stack
+    GOTO: 3,     // jump to bytecode index
+    GET: 4,      // fetch from global context
 
     // Control Flow
 
-    LABEL: 6,    // Label
-    VISIT: 7,    // Visit label and return back
+    LABEL: 5,    // Label
+    VISIT: 6,    // Visit label and return back
+    CJUMP: 7,    // Jump if false
     JUMP: 8,     // Jump to label
     INVOKE: 9,   // Invoke Function
 
@@ -96,7 +96,7 @@ if(shuffle) {
     }
 }
 
-console.log(ORIGINAL_OPCODES)
+//console.log(ORIGINAL_OPCODES)
 
 const OPCODES : { [key: string]: any } = structuredClone(ORIGINAL_OPCODES);
 
@@ -137,9 +137,14 @@ const identifiers : { [key: string]: any } = {
     READ_REGISTRY: "READ_REGISTRY",
 
     LABELS: "LABELS",
+    STORE_LABEL: "STORE_LABEL",
     _CREATE_LABEL: "_CREATE_LABEL",
+    _FIND_LABEL: "_FIND_LABEL",
+
+    _JUMP: "_JUMP",
 
     OP_INDEX: "OP_INDEX",
+    OPERATIONS: "OPERATIONS",
 
     APPLIER: "APPLIER",
     SHIFTER: "SHIFTER",
@@ -154,6 +159,9 @@ const identifiers : { [key: string]: any } = {
     EXECUTOR_ARGS: "EXECUTOR_ARGS",
     INSN_EXECUTOR: "INSN_EXECUTOR",
     EXECUTE: "EXECUTE_PROXY",
+    GET_NEXT_INSTRUCTION: "GET_NEXT_INSTRUCTION",
+
+    OBJECT_CLONER: "OBJECT_CLONER",
 }
 
 const getInstruction = (x: any) => {
@@ -211,6 +219,7 @@ let vmBody = `
 ${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1,-1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ "+_).join(",")}}, | - SPLIT >
 
 ${identifiers.OP_INDEX}: 0, // index of operation | - SPLIT >
+${identifiers.OPERATIONS}: [], // operations | - SPLIT >
 
 ${identifiers.CPOOL}: [], // constant pool | - SPLIT >
 ${identifiers.STACK}: [], // virtual stack | - SPLIT >
@@ -219,6 +228,7 @@ ${identifiers.LABELS}: [], // label registry | - SPLIT >
 
 ${identifiers.GETTHIS}: this, | - SPLIT >
 ${identifiers.OBJECT}: Object, | - SPLIT >
+${identifiers.OBJECT_CLONER}: _ => structuredClone(_), | - SPLIT >
 
 ${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).split("").slice(6,26).join(''), | - SPLIT >
 ${identifiers.CINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.CPOOL},_]), | - SPLIT >
@@ -238,6 +248,9 @@ ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}
 ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers.GETTHIS}[_]), | - SPLIT >
 
 ${identifiers._CREATE_LABEL}: _ => vm.${identifiers.LINSERT}(_), | - SPLIT >
+${identifiers._FIND_LABEL}: _ => vm.${identifiers.LABELS}[vm.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
+
+${identifiers._JUMP}: _ => vm.${identifiers.OP_INDEX} = vm.${identifiers._FIND_LABEL}(_), | - SPLIT >
 
 get ${identifiers.OPCODE_KEYS}() {
     return vm.${identifiers.APPLIER}([vm.${identifiers.OBJECT}.keys,vm,[vm.${identifiers.OPCODES}]]);
@@ -272,7 +285,15 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.READ_REGISTRY]}(_) {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.LABEL]}(_) {
-    vm.${identifiers._CREATE_LABEL}(_[0])
+    vm.${identifiers._CREATE_LABEL}
+}, | - SPLIT >
+
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.JUMP]}(_) {
+    vm.${identifiers._JUMP}(_[0]);
+}, | - SPLIT >
+
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.CJUMP]}(_) {
+    vm.${identifiers._LOAD}() ? _ : vm.${identifiers._JUMP}(_[0]);
 }, | - SPLIT >
 
 ${identifiers.OPERATE}: _ =>  vm.${identifiers._STORE}(vm.${identifiers._LOADX}(2).reverse(vm.${identifiers.SHIFTER}(_)).reduce(vm.${identifiers.SHIFTER}(_))),
@@ -283,17 +304,30 @@ ${identifiers.SHIFTER}: _ => _.shift(), | - SPLIT >
 ${identifiers.UNSHIFTER}: _ => vm.${identifiers.SHIFTER}(_).unshift(vm.${identifiers.SHIFTER}(_)), | - SPLIT >
 ${identifiers.APPLIER}: _ => vm.${identifiers.SHIFTER}(_).apply(vm.${identifiers.SHIFTER}(_),vm.${identifiers.SHIFTER}(_)), | - SPLIT >
 
+${identifiers.STORE_LABEL}: _ => vm.${identifiers.SHIFTER}(_) == vm.${identifiers.OPCODES}.${OPCODE_KEYS[ORIGINAL_OPCODES.LABEL]} ? vm.${identifiers._CREATE_LABEL}([vm.${identifiers.SHIFTER}(_),vm.${identifiers.OP_INDEX}]) : _,
+
+${identifiers.GET_NEXT_INSTRUCTION}: _ => vm.${identifiers.APPLIER}([vm.${identifiers.OBJECT_CLONER}, _, [vm.${identifiers.OPERATIONS}[vm.${identifiers.OP_INDEX}++]]]),
+
 ${identifiers.EXECUTE_INSN}: (insn, args) => vm[vm.${identifiers.OPCODE_KEYS}[insn]] = args, | - SPLIT >
 
 ${identifiers.EXECUTOR_ARGS}: _ => [vm.${identifiers.SHIFTER}(_), _], | - SPLIT >
 
 ${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.APPLIER}([vm.${identifiers.EXECUTE_INSN}, _,vm.${identifiers.EXECUTOR_ARGS}(_)]), | - SPLIT >
 
-${identifiers.EXECUTE}: insns => {
-    insns.map(vm.${identifiers.INSN_EXECUTOR})
+${identifiers.EXECUTE}: _ => {
+    while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
+        vm.${identifiers.STORE_LABEL}(vm.${identifiers.GET_NEXT_INSTRUCTION}());
+    }
+
+    vm.${identifiers.OP_INDEX} = 0;
+
+    while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
+        //console.log(vm.${identifiers.OP_INDEX})
+        vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}())
+    }
 }, | - SPLIT >
 
-EXECUTE: _ => vm.${identifiers.EXECUTE}(_),
+EXECUTE: _ => vm.${identifiers.EXECUTE}(vm.${identifiers.OPERATIONS} = _),
 `.split(" | - SPLIT >")
 
 if(shuffle) vmBody = string_utils.shuffleArray(vmBody);
