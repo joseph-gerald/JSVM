@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = true; // false for debug
+const shuffle = false; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -110,6 +110,7 @@ if(shuffle) {
 const OPCODE_KEYS = Object.keys(OPCODES);
 
 const identifiers : { [key: string]: any } = {
+    OPCODE_KEYS: "OPCODE_KEYS",
     OPCODES: "OPCODES",
     HASH: "HASH",
 
@@ -135,8 +136,19 @@ const identifiers : { [key: string]: any } = {
     REGISTER: "REGISTER",
     READ_REGISTRY: "READ_REGISTRY",
 
+    LABELS: "LABELS",
+    _CREATE_LABEL: "_CREATE_LABEL",
+
+    OP_INDEX: "OP_INDEX",
+
     APPLIER: "APPLIER",
     SHIFTER: "SHIFTER",
+    OPERATE: "OPERATE",
+
+    UNSHIFTER: "UNSHIFTER",
+
+    GETTHIS: "GETTHIS",
+    OBJECT: "OBJECT",
 
     EXECUTE_INSN: "EXECUTE_INSN",
     EXECUTOR_ARGS: "EXECUTOR_ARGS",
@@ -187,7 +199,7 @@ for (let operation of Object.keys(operations)) {
     */ 
     MATH_OPERATIONS += `
 set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
-    vm.${identifiers._STORE}(vm.${identifiers._LOADX}(2).reverse(_).reduce((a, b) => a ${operation} b))
+    vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);
 }, | - SPLIT >
     `
 }
@@ -195,13 +207,23 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
 //console.log(MATH_OPERATIONS)
 
 let vmBody = `
+/*@__MANGLE_PROP__*/
+${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1,-1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ "+_).join(",")}}, | - SPLIT >
+
+${identifiers.OP_INDEX}: 0, // index of operation | - SPLIT >
+
 ${identifiers.CPOOL}: [], // constant pool | - SPLIT >
 ${identifiers.STACK}: [], // virtual stack | - SPLIT >
 ${identifiers.REGISTRY}: [], // variable registry | - SPLIT >
+${identifiers.LABELS}: [], // label registry | - SPLIT >
+
+${identifiers.GETTHIS}: this, | - SPLIT >
+${identifiers.OBJECT}: Object, | - SPLIT >
 
 ${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).split("").slice(6,26).join(''), | - SPLIT >
-${identifiers.CINSERT}: _ => vm.${identifiers.CPOOL}.unshift(_), | - SPLIT >
-${identifiers.SINSERT}: _ => vm.${identifiers.STACK}.unshift(_), | - SPLIT >
+${identifiers.CINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.CPOOL},_]), | - SPLIT >
+${identifiers.SINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.STACK},_]), | - SPLIT >
+${identifiers.LINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.LABELS},_]), | - SPLIT >
 
 ${identifiers._LOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.CPOOL}), | - SPLIT >
 ${identifiers._LOADX}: _ => ($=vm.${identifiers.CPOOL}.slice(0,_),vm.${identifiers.CPOOL} = vm.${identifiers.CPOOL}.slice(_,vm.${identifiers.CPOOL}.length),$), | - SPLIT >
@@ -209,11 +231,17 @@ ${identifiers._SLOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.STACK}), 
 
 ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]), | - SPLIT >
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
-${identifiers._GET}: _ => vm.${identifiers.SINSERT}(_.reduce((($=this, _) => $[_]), this)), | - SPLIT >
+${identifiers._GET}: _ => vm.${identifiers.SINSERT}(_.reduce((($=vm.${identifiers.GETTHIS}, _) => $[_]), vm.${identifiers.GETTHIS})), | - SPLIT >
 
 ${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_)]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
-${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??this[_]), | - SPLIT >
+${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers.GETTHIS}[_]), | - SPLIT >
+
+${identifiers._CREATE_LABEL}: _ => vm.${identifiers.LINSERT}(_), | - SPLIT >
+
+get ${identifiers.OPCODE_KEYS}() {
+    return vm.${identifiers.APPLIER}([vm.${identifiers.OBJECT}.keys,vm,[vm.${identifiers.OPCODES}]]);
+}, | - SPLIT >
 
 get ${OPCODE_KEYS[ORIGINAL_OPCODES.LOAD]}() { 
     return vm.${identifiers._LOAD}();
@@ -243,12 +271,19 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.READ_REGISTRY]}(_) {
     vm.${identifiers._READ_REGISTRY}(_[0])
 }, | - SPLIT >
 
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.LABEL]}(_) {
+    vm.${identifiers._CREATE_LABEL}(_[0])
+}, | - SPLIT >
+
+${identifiers.OPERATE}: _ =>  vm.${identifiers._STORE}(vm.${identifiers._LOADX}(2).reverse(vm.${identifiers.SHIFTER}(_)).reduce(vm.${identifiers.SHIFTER}(_))),
+
 ${MATH_OPERATIONS}
 
 ${identifiers.SHIFTER}: _ => _.shift(), | - SPLIT >
+${identifiers.UNSHIFTER}: _ => vm.${identifiers.SHIFTER}(_).unshift(vm.${identifiers.SHIFTER}(_)), | - SPLIT >
 ${identifiers.APPLIER}: _ => vm.${identifiers.SHIFTER}(_).apply(vm.${identifiers.SHIFTER}(_),vm.${identifiers.SHIFTER}(_)), | - SPLIT >
 
-${identifiers.EXECUTE_INSN}: (insn, args) => vm[Object.keys(vm.${identifiers.OPCODES})[insn]] = args, | - SPLIT >
+${identifiers.EXECUTE_INSN}: (insn, args) => vm[vm.${identifiers.OPCODE_KEYS}[insn]] = args, | - SPLIT >
 
 ${identifiers.EXECUTOR_ARGS}: _ => [vm.${identifiers.SHIFTER}(_), _], | - SPLIT >
 
@@ -265,14 +300,13 @@ if(shuffle) vmBody = string_utils.shuffleArray(vmBody);
 
 const vmCode = `
 const vm = {
-    /*@__MANGLE_PROP__*/
-    ${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1,-1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ "+_).join(",")}},
     ${vmBody.join("")}
 };
 `
 
 export default {
     vmCode,
+    operations,
     minify,
     getInstruction
 }

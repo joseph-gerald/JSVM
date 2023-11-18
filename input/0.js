@@ -1,5 +1,5 @@
 
-let age = 42;
+let age = 42 * 100;
 let text = "I am " + 42 + " years old"
 /*
 
