@@ -160,7 +160,7 @@ export default {
         //return this.make_large_string(Date.now() % 1000000, 5).slice(1)
         //return this.make_circle_string(jumpCount++, 5)
         //return this.getMangledAt(jumpCount++)
-        return this.make_base64_string(1+jumpCount++, 5)
+        return this.make_hexadecimal_string(1+jumpCount++, 5).slice(1)
     },
     make_money_string: function (index: number, length: number) {
         const characters = shuffleArray(["$", "_", "v", "V"]);

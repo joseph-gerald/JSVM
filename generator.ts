@@ -14,6 +14,7 @@ export const transform = async (code: string) => {
         plugins: ["jsx"],
     });
 
+    let context: any[] = [];
     let output = "";
 
     const handledNodeTypes = new Set();
@@ -28,40 +29,44 @@ export const transform = async (code: string) => {
 
     let handled: any[] = [];
 
+    function setHandled(node: any) {
+        handled.push(node.loc);
+    }
+
     const handleKeys = (node: types.MemberExpression) => {
         let keys: string[] = [];
 
 
         if (types.isMemberExpression(node.object)) {
             keys.push(...handleKeys(node.object))
-            handled.push(node.object.loc);
+            setHandled(node.object);
         }
 
         if (types.isIdentifier(node.object)) {
             keys.push(node.object.name);
-            handled.push(node.object.loc);
+            setHandled(node.object);
         }
 
         if (types.isThisExpression(node.object)) {
             keys.push("this")
-            handled.push(node.object.loc);
+            setHandled(node.object);
         }
 
         // property
 
         if (types.isIdentifier(node.property)) {
             keys.push(node.property.name);
-            handled.push(node.property.loc);
+            setHandled(node.property);
         }
 
         if (types.isStringLiteral(node.property)) {
             keys.push(node.property.value);
-            handled.push(node.property.loc);
+            setHandled(node.property);
         }
 
         if (types.isThisExpression(node.property)) {
             keys.push("this")
-            handled.push(node.property.loc);
+            setHandled(node.property);
         }
 
         return keys;
@@ -70,22 +75,20 @@ export const transform = async (code: string) => {
     const handleLiteral = (node: types.Node) => {
         if (types.isNumericLiteral(node) || types.isStringLiteral(node)) {
             addInstruction("STORE", types.isStringLiteral(node) ? '"' + node.value + '"' : node.value);
-            handled.push(node.loc);
+            setHandled(node);
         }
     }
 
     const handleValue = (node: types.Node) => {
-        if (types.isIdentifier(node)) {
-            handleNode(node);
-        }
-
         if (types.isLiteral(node)) {
             handleLiteral(node);
+            return;
         }
 
-        if (types.isBinaryExpression(node)) {
-            handleNode(node)
-        }
+        handleNode(node)
+
+        if(types.isUpdateExpression(node) && types.isIdentifier(node.argument))
+            addInstruction("READ_REGISTRY",JSON.stringify([node.argument.name]))
     }
 
     const handleNode = (node: types.Node) => {
@@ -101,7 +104,43 @@ export const transform = async (code: string) => {
                 output = `${code_utils.vmCode}\nend_of_vm_${state}\nvm.EXECUTE([${output}`;
                 break;
 
-            // Variables
+            // Declerations
+            case "FunctionDeclaration":
+                if(!types.isFunctionDeclaration(node)) return;
+                if(!types.isBlockStatement(node.body)) return;
+
+                var start = string_utils.get_jump_address();
+                var end = string_utils.get_jump_address();
+
+                const id = node.id;
+
+                setHandled(node.id);
+                console.log(node.id?.loc)
+
+                const params = node.params;
+
+                for (const param of params) {
+                    setHandled(param)
+                }
+
+                const body = node.body;
+
+                addInstruction("STORE", '"' + start + '"')
+                addInstruction("STORE", '"' + id?.name + '"')
+                addInstruction("REGISTER");
+
+                addInstruction("JUMP", '"' + end + '"')
+                addInstruction("LABEL", '"' + start + '"')
+
+                context = [id?.name,start]
+
+                handleNode(body);
+                
+                context = [];
+
+                addInstruction("LABEL", '"' + end + '"')
+                break;
+
             case "VariableDeclaration":
                 if (!types.isVariableDeclaration(node)) return;
                 for (const decleration of node.declarations)
@@ -110,7 +149,7 @@ export const transform = async (code: string) => {
             case "VariableDeclarator":
                 if (!types.isVariableDeclarator(node)) return;
 
-                handled.push(node.id.loc);
+                setHandled(node.id);
 
                 const identifier = (node.id as types.Identifier).name;
 
@@ -118,12 +157,12 @@ export const transform = async (code: string) => {
                     handleLiteral(node.init);
                 }
 
-                if (types.isIdentifier(node.init)) {
-                    handleNode(node.init);
-                }
-
-                if (types.isBinaryExpression(node.init)) {
-                    handleNode(node.init);
+                if (
+                    types.isIdentifier(node.init) ||
+                    types.isBinaryExpression(node.init) ||
+                    types.isObjectExpression(node.init))
+                {
+                    handleNode(node.init)
                 }
 
                 addInstruction("STORE", '"' + identifier + '"');
@@ -132,7 +171,7 @@ export const transform = async (code: string) => {
 
             case "Identifier":
                 if (!types.isIdentifier(node)) return;
-                addInstruction("READ_REGISTRY", '"' + node.name + '"');
+                addInstruction("READ_REGISTRY", JSON.stringify(context.concat([node.name] as any)));
                 break;
 
             // Expression
@@ -146,6 +185,7 @@ export const transform = async (code: string) => {
 
                 // coolFunction()
                 if (types.isIdentifier(node.callee)) {
+                    setHandled(node.callee)
                     addInstruction("GET", JSON.stringify([node.callee.name]))
                 }
 
@@ -156,6 +196,8 @@ export const transform = async (code: string) => {
                     if (types.isIdentifier(arg)) {
                         console.log("identifier: " + arg.name)
                         args.push(handleNode(arg))
+                    } else if (types.isMemberExpression(arg)) {
+                        args.push(addInstruction("READ_REGISTRY", JSON.stringify(handleKeys(arg))))
                     } else if (types.isStringLiteral(arg)) {
                         args.push(addInstruction("STORE", '"' + arg.value + '"'))
                     } else if (types.isNumericLiteral(arg)) {
@@ -191,7 +233,7 @@ export const transform = async (code: string) => {
 
                 switch (node.operator) {
                     case "=":
-                        handled.push(node.left.loc);
+                        setHandled(node.left);
                         handleValue(node.right)
                         addInstruction("STORE", '"' + node.left.name + '"');
                         addInstruction("REGISTER");
@@ -210,6 +252,14 @@ export const transform = async (code: string) => {
                 addInstruction("STORE", '"' + node.argument.name + '"');
                 addInstruction("REGISTER")
                 break;
+            case "ObjectExpression":
+                if(!types.isObjectExpression(node)) return;
+
+                for (const prop of node.properties) {
+                    
+                }
+                break;
+            
 
             // Literals
             case "StringLiteral":
@@ -307,7 +357,7 @@ export const transform = async (code: string) => {
                 return;
         }
 
-        handled.push(node.loc);
+        setHandled(node);
     }
 
     traverse(ast, {

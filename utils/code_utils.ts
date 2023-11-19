@@ -8,7 +8,7 @@ const shuffle = false; // false for debug
 const mangleSettings: MangleOptions = {
     eval: true,
     properties: shuffle,
-    reserved: ["submitCaptcha"],
+    reserved: ["vm"],
 
 };
 
@@ -46,46 +46,46 @@ async function minify(code: string) {
     return (await terser.minify(code, options)).code as string;
 }
 
-let ORIGINAL_OPCODES: { [key: string]: any } = {
-    STORE: 0,    // store to constant pool / heap
-    DUP: 1,      // duplicate item from stack
-    LOAD: 2,     // load from top of stack
-    GOTO: 3,     // jump to bytecode index
-    GET: 4,      // fetch from global context
+let ORIGINAL_OPCODES: { [key: string]: any } = [
+    "STORE",    // store to constant pool / heap
+    "DUP",      // duplicate item from stack
+    "LOAD",     // load from top of stack
+    "GOTO",     // jump to bytecode index
+    "GET",      // fetch from global context
 
     // Control Flow
 
-    LABEL: 5,    // Label
-    VISIT: 6,    // Visit label and return back
-    CJUMP: 7,    // Jump if false
-    JUMP: 8,     // Jump to label
-    INVOKE: 9,   // Invoke Function
+    "LABEL", // Label
+    "VISIT", // Visit label and return back
+    "CJUMP", // Jump if false
+    "JUMP",  // Jump to label
+    "INVOKE",// Invoke Function
 
     // Math
 
-    OADD: 10,   // Operation: Add
-    OSUB: 11,   // Operation: Subtract
-    OMUL: 12,   // Operation: Multiply
-    ODIV: 13,   // Operation: Division
-    OXOR: 14,   // Operation: Bitwise XOR
-    OBOR: 15,   // Operation: Bitwise OR
-    OAND: 16,   // Operation: Bitwise And
-    OEXP: 17,   // Operation: Exponents
-    OMOD: 18,   // Operation: Modulo
+    "OADD",// Operation: Add
+    "OSUB",// Operation: Subtract
+    "OMUL",// Operation: Multiply
+    "ODIV",// Operation: Division
+    "OXOR",// Operation: Bitwise XOR
+    "OBOR",// Operation: Bitwise OR
+    "OAND",// Operation: Bitwise And
+    "OEXP",// Operation: Exponents
+    "OMOD",// Operation: Modulo
 
-    REGISTER: 19,
-    READ_REGISTRY: 20,
+    "REGISTER",
+    "READ_REGISTRY",
 
-    // Logical Operations
-    AND: 21,   // Operation: And
-    OR: 22,   // Operation: Or
-    OEQ: 23,   // Operation: Equality
-    OIQ: 24,   // Operation: Inequality
-    OGT: 25,   // Operation: Greater Than
-    OGE: 26,   // Operation: Greater / Equal
-    OLT: 27,   // Operation: Less Than
-    OLE: 28,   // Operation: Less / Equal
-};
+    // Logic Operations
+    "AND",// Operation: And
+    "OR",// Operation: Or
+    "OEQ",// Operation: Equality
+    "OIQ",// Operation: Inequality
+    "OGT",// Operation: Greater Than
+    "OGE",// Operation: Greater / Equal
+    "OLT",// Operation: Less Than
+    "OLE",// Operation: Less / Equal
+].reduce((obj, item, index) => ({ ...obj, [item]: index }), {});;
 
 if (shuffle) {
     const opcodes_ids = string_utils.shuffleArray(Object.keys(ORIGINAL_OPCODES));
@@ -130,6 +130,7 @@ const identifiers: { [key: string]: any } = {
     _DUP: "_DUP",
     _STORE: "_STORE",
     _GET: "_GET",
+    _DIG: "_DIG",
 
     _INVOKE: "_INVOKE",
     _REGISTER: "_REGISTER",
@@ -247,13 +248,14 @@ ${identifiers._LOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.CPOOL}), |
 ${identifiers._LOADX}: _ => ($=vm.${identifiers.CPOOL}.slice(0,_),vm.${identifiers.CPOOL} = vm.${identifiers.CPOOL}.slice(_,vm.${identifiers.CPOOL}.length),$), | - SPLIT >
 ${identifiers._SLOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.STACK}), | - SPLIT >
 
+${identifiers._DIG}: _ => vm.${identifiers.SHIFTER}(_).reduce((($=vm.${identifiers.SHIFTER}(_), _) => $[_]), vm.${identifiers.SHIFTER}(_)),
 ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]), | - SPLIT >
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
-${identifiers._GET}: _ => vm.${identifiers.SINSERT}(_.reduce((($=vm.${identifiers.GETTHIS}, _) => $[_]), vm.${identifiers.GETTHIS})), | - SPLIT >
+${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
 
 ${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_).reverse()]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
-${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers.GETTHIS}[_]), | - SPLIT >
+${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])??vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
 
 ${identifiers._CREATE_LABEL}: _ => vm.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => vm.${identifiers.LABELS}[vm.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >

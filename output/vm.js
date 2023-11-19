@@ -1,5 +1,5 @@
 /* JOVM */
-const E = {
+const vm = {
     OPCODES: {
         STORE: 0,
         DUP: 1,
@@ -41,118 +41,119 @@ const E = {
     OBJECT: Object,
     OBJECT_CLONER: E => structuredClone(E),
     HASH: E => btoa(btoa(btoa(E))).split("").map((E => E.charCodeAt())).reduce(((E, O) => (O ^ E / O | O & O | E << (E.length | E << O | 1e-5) << (E.length | 41 * E.length) << E * E) + "" + E)).split("").slice(6, 26).join(""),
-    CINSERT: O => E.UNSHIFTER([E.CPOOL, O]),
-    SINSERT: O => E.UNSHIFTER([E.STACK, O]),
-    LINSERT: O => E.UNSHIFTER([E.LABELS, O]),
-    _LOAD: O => E.SHIFTER(E.CPOOL),
-    _LOADX: O => ($ = E.CPOOL.slice(0, O), E.CPOOL = E.CPOOL.slice(O, E.CPOOL.length),
+    CINSERT: E => vm.UNSHIFTER([vm.CPOOL, E]),
+    SINSERT: E => vm.UNSHIFTER([vm.STACK, E]),
+    LINSERT: E => vm.UNSHIFTER([vm.LABELS, E]),
+    _LOAD: E => vm.SHIFTER(vm.CPOOL),
+    _LOADX: E => ($ = vm.CPOOL.slice(0, E), vm.CPOOL = vm.CPOOL.slice(E, vm.CPOOL.length),
         $),
-    _SLOAD: O => E.SHIFTER(E.STACK),
-    _DUP: O => E.CINSERT(E.CPOOL[0]),
-    _STORE: O => E.CINSERT(O),
-    _GET: O => E.SINSERT(O.reduce(((O = E.GETTHIS, T) => O[T]), E.GETTHIS)),
-    _INVOKE: O => E.APPLIER([E._SLOAD(), O, E._LOADX(O).reverse()]),
-    _REGISTER: O => E.REGISTRY[E.HASH(E._LOAD())] = E._LOAD(),
-    _READ_REGISTRY: O => E._STORE(E.REGISTRY[E.HASH(O)] ?? E.GETTHIS[O]),
-    _CREATE_LABEL: O => E.LINSERT(O),
-    _FIND_LABEL: O => E.LABELS[E.LABELS.map((E => E[0])).indexOf(O)][1],
-    _JUMP: O => E.OP_INDEX = E._FIND_LABEL(O),
+    _SLOAD: E => vm.SHIFTER(vm.STACK),
+    _DIG: E => vm.SHIFTER(E).reduce(((E = vm.SHIFTER(O), O) => E[O]), vm.SHIFTER(E)),
+    _DUP: E => vm.CINSERT(vm.CPOOL[0]),
+    _STORE: E => vm.CINSERT(E),
+    _GET: E => vm.SINSERT(vm._DIG([E, vm.GETTHIS, vm.GETTHIS])),
+    _INVOKE: E => vm.APPLIER([vm._SLOAD(), E, vm._LOADX(E).reverse()]),
+    _REGISTER: E => vm.REGISTRY[vm.HASH(vm._LOAD())] = vm._LOAD(),
+    _READ_REGISTRY: E => vm._STORE(vm._DIG([E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY]) ?? vm._DIG([E, vm.GETTHIS, vm.GETTHIS])),
+    _CREATE_LABEL: E => vm.LINSERT(E),
+    _FIND_LABEL: E => vm.LABELS[vm.LABELS.map((E => E[0])).indexOf(E)][1],
+    _JUMP: E => vm.OP_INDEX = vm._FIND_LABEL(E),
     get OPCODE_KEYS() {
-        return E.APPLIER([E.OBJECT.keys, E, [E.OPCODES]]);
+        return vm.APPLIER([vm.OBJECT.keys, vm, [vm.OPCODES]]);
     },
     get LOAD() {
-        return E._LOAD();
+        return vm._LOAD();
     },
     get DUP() {
-        E._DUP();
+        vm._DUP();
     },
-    set GET(O) {
-        E._GET(E.SHIFTER(O));
+    set GET(E) {
+        vm._GET(vm.SHIFTER(E));
     },
-    set STORE(O) {
-        E._STORE(E.SHIFTER(O));
+    set STORE(E) {
+        vm._STORE(vm.SHIFTER(E));
     },
-    set INVOKE(O) {
-        E._INVOKE(E.SHIFTER(O));
+    set INVOKE(E) {
+        vm._INVOKE(vm.SHIFTER(E));
     },
-    set REGISTER(O) {
-        E._REGISTER(E.SHIFTER(O));
+    set REGISTER(E) {
+        vm._REGISTER(vm.SHIFTER(E));
     },
-    set READ_REGISTRY(O) {
-        E._READ_REGISTRY(E.SHIFTER(O));
+    set READ_REGISTRY(E) {
+        vm._READ_REGISTRY(vm.SHIFTER(E));
     },
-    set LABEL(O) {
-        E._CREATE_LABEL;
+    set LABEL(E) {
+        vm._CREATE_LABEL;
     },
-    set JUMP(O) {
-        E._JUMP(E.SHIFTER(O));
+    set JUMP(E) {
+        vm._JUMP(vm.SHIFTER(E));
     },
-    set CJUMP(O) {
-        E._LOAD() || E._JUMP(O[0]);
+    set CJUMP(E) {
+        vm._LOAD() || vm._JUMP(E[0]);
     },
-    OPERATE: O => E._STORE(E._LOADX(2).reverse(E.SHIFTER(O)).reduce(E.SHIFTER(O))),
-    set OADD(O) {
-        E.OPERATE([O, (E, O) => E + O]);
+    OPERATE: E => vm._STORE(vm._LOADX(2).reverse(vm.SHIFTER(E)).reduce(vm.SHIFTER(E))),
+    set OADD(E) {
+        vm.OPERATE([E, (E, O) => E + O]);
     },
-    set OSUB(O) {
-        E.OPERATE([O, (E, O) => E - O]);
+    set OSUB(E) {
+        vm.OPERATE([E, (E, O) => E - O]);
     },
-    set OMUL(O) {
-        E.OPERATE([O, (E, O) => E * O]);
+    set OMUL(E) {
+        vm.OPERATE([E, (E, O) => E * O]);
     },
-    set ODIV(O) {
-        E.OPERATE([O, (E, O) => E / O]);
+    set ODIV(E) {
+        vm.OPERATE([E, (E, O) => E / O]);
     },
-    set OXOR(O) {
-        E.OPERATE([O, (E, O) => E ^ O]);
+    set OXOR(E) {
+        vm.OPERATE([E, (E, O) => E ^ O]);
     },
-    set OBOR(O) {
-        E.OPERATE([O, (E, O) => E | O]);
+    set OBOR(E) {
+        vm.OPERATE([E, (E, O) => E | O]);
     },
-    set OAND(O) {
-        E.OPERATE([O, (E, O) => E & O]);
+    set OAND(E) {
+        vm.OPERATE([E, (E, O) => E & O]);
     },
-    set OMOD(O) {
-        E.OPERATE([O, (E, O) => E % O]);
+    set OMOD(E) {
+        vm.OPERATE([E, (E, O) => E % O]);
     },
-    set OEXP(O) {
-        E.OPERATE([O, (E, O) => E ** O]);
+    set OEXP(E) {
+        vm.OPERATE([E, (E, O) => E ** O]);
     },
-    set AND(O) {
-        E.OPERATE([O, (E, O) => E && O]);
+    set AND(E) {
+        vm.OPERATE([E, (E, O) => E && O]);
     },
-    set OR(O) {
-        E.OPERATE([O, (E, O) => E || O]);
+    set OR(E) {
+        vm.OPERATE([E, (E, O) => E || O]);
     },
-    set OEQ(O) {
-        E.OPERATE([O, (E, O) => E == O]);
+    set OEQ(E) {
+        vm.OPERATE([E, (E, O) => E == O]);
     },
-    set OIQ(O) {
-        E.OPERATE([O, (E, O) => E != O]);
+    set OIQ(E) {
+        vm.OPERATE([E, (E, O) => E != O]);
     },
-    set OGT(O) {
-        E.OPERATE([O, (E, O) => E > O]);
+    set OGT(E) {
+        vm.OPERATE([E, (E, O) => E > O]);
     },
-    set OGE(O) {
-        E.OPERATE([O, (E, O) => E >= O]);
+    set OGE(E) {
+        vm.OPERATE([E, (E, O) => E >= O]);
     },
-    set OLT(O) {
-        E.OPERATE([O, (E, O) => O > E]);
+    set OLT(E) {
+        vm.OPERATE([E, (E, O) => O > E]);
     },
-    set OLE(O) {
-        E.OPERATE([O, (E, O) => O >= E]);
+    set OLE(E) {
+        vm.OPERATE([E, (E, O) => O >= E]);
     },
     SHIFTER: E => E.shift(),
-    UNSHIFTER: O => E.SHIFTER(O).unshift(E.SHIFTER(O)),
-    APPLIER: O => E.SHIFTER(O).apply(E.SHIFTER(O), E.SHIFTER(O)),
-    STORE_LABEL: O => E.SHIFTER(O) == E.OPCODES.LABEL ? E._CREATE_LABEL([E.SHIFTER(O), E.OP_INDEX]) : O,
-    GET_NEXT_INSTRUCTION: O => E.APPLIER([E.OBJECT_CLONER, O, [E.OPERATIONS[E.OP_INDEX++]]]),
-    EXECUTE_INSN: (O, T) => E[E.OPCODE_KEYS[O]] = T,
-    EXECUTOR_ARGS: O => [E.SHIFTER(O), O],
-    INSN_EXECUTOR: O => E.APPLIER([E.EXECUTE_INSN, O, E.EXECUTOR_ARGS(O)]),
-    EXECUTE_PROXY: O => {
-        for (; E.OP_INDEX < E.OPERATIONS.length;) E.STORE_LABEL(E.GET_NEXT_INSTRUCTION());
-        for (E.OP_INDEX = 0; E.OP_INDEX < E.OPERATIONS.length;) E.INSN_EXECUTOR(E.GET_NEXT_INSTRUCTION());
+    UNSHIFTER: E => vm.SHIFTER(E).unshift(vm.SHIFTER(E)),
+    APPLIER: E => vm.SHIFTER(E).apply(vm.SHIFTER(E), vm.SHIFTER(E)),
+    STORE_LABEL: E => vm.SHIFTER(E) == vm.OPCODES.LABEL ? vm._CREATE_LABEL([vm.SHIFTER(E), vm.OP_INDEX]) : E,
+    GET_NEXT_INSTRUCTION: E => vm.APPLIER([vm.OBJECT_CLONER, E, [vm.OPERATIONS[vm.OP_INDEX++]]]),
+    EXECUTE_INSN: (E, O) => vm[vm.OPCODE_KEYS[E]] = O,
+    EXECUTOR_ARGS: E => [vm.SHIFTER(E), E],
+    INSN_EXECUTOR: E => vm.APPLIER([vm.EXECUTE_INSN, E, vm.EXECUTOR_ARGS(E)]),
+    EXECUTE_PROXY: E => {
+        for (; vm.OP_INDEX < vm.OPERATIONS.length;) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
+        for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length;) vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
     },
-    EXECUTE: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
+    EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
