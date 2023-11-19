@@ -141,6 +141,7 @@ export const transform = async (code: string) => {
                 
                 context = [];
 
+                addInstruction("RETURN")
                 addInstruction("LABEL", '"' + end + '"')
                 break;
 
@@ -230,18 +231,44 @@ export const transform = async (code: string) => {
                 break;
             case "AssignmentExpression":
                 if (!types.isAssignmentExpression(node)) return;
-                if (!types.isIdentifier(node.left)) return;
+                if (!types.isIdentifier(node.left) && !types.isMemberExpression(node.left)) return;
 
 
 
                 switch (node.operator) {
                     case "=":
-                        setHandled(node.left);
-                        handleValue(node.right)
-                        addInstruction("STORE", '"' + node.left.name + '"');
-                        addInstruction("REGISTER");
+                        if(types.isIdentifier(node.left)) {
+                            setHandled(node.left);
+                            handleValue(node.right)
+                            addInstruction("STORE", '"' + node.left.name + '"');
+                            addInstruction("REGISTER");
+                        }
+
+                        if(types.isMemberExpression(node.left)) {
+                            setHandled(node.left);
+                            addInstruction("STORE", JSON.stringify(handleKeys(node.left)));
+                            handleValue(node.right)
+                            addInstruction("ASSIGN");
+                        }
                         break;
                     default:
+                        const operation = node.operator.charAt(0);
+
+                        if(types.isIdentifier(node.left)) {
+                            setHandled(node.left);
+                            addInstruction("READ_REGISTRY", '"' + node.left.name + '"')
+                            handleValue(node.right)
+                            addInstruction(code_utils.operations[operation])
+                            addInstruction("STORE", '"' + node.left.name + '"');
+                            addInstruction("REGISTER");
+                        }
+
+                        if(types.isMemberExpression(node.left)) {
+                            setHandled(node.left);
+                            addInstruction("STORE", JSON.stringify(handleKeys(node.left)));
+                            handleValue(node.right)
+                            addInstruction("ASSIGN");
+                        }
                         break;
                 }
                 break;
@@ -280,6 +307,9 @@ export const transform = async (code: string) => {
             case "ExpressionStatement":
                 if (!types.isExpressionStatement(node)) return;
                 handleNode(node.expression);
+                break;
+            case "ReturnStatement":
+                addInstruction("RETURN")
                 break;
 
             // Control Flow

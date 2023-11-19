@@ -7,29 +7,31 @@ const vm = {
         GOTO: 3,
         GET: 4,
         LABEL: 5,
-        VISIT: 6,
-        CJUMP: 7,
-        JUMP: 8,
-        INVOKE: 9,
-        OADD: 10,
-        OSUB: 11,
-        OMUL: 12,
-        ODIV: 13,
-        OXOR: 14,
-        OBOR: 15,
-        OAND: 16,
-        OEXP: 17,
-        OMOD: 18,
-        REGISTER: 19,
-        READ_REGISTRY: 20,
-        AND: 21,
-        OR: 22,
-        OEQ: 23,
-        OIQ: 24,
-        OGT: 25,
-        OGE: 26,
-        OLT: 27,
-        OLE: 28
+        RETURN: 6,
+        VISIT: 7,
+        CJUMP: 8,
+        JUMP: 9,
+        INVOKE: 10,
+        ASSIGN: 11,
+        OADD: 12,
+        OSUB: 13,
+        OMUL: 14,
+        ODIV: 15,
+        OXOR: 16,
+        OBOR: 17,
+        OAND: 18,
+        OEXP: 19,
+        OMOD: 20,
+        REGISTER: 21,
+        READ_REGISTRY: 22,
+        AND: 23,
+        OR: 24,
+        OEQ: 25,
+        OIQ: 26,
+        OGT: 27,
+        OGE: 28,
+        OLT: 29,
+        OLE: 30
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -37,13 +39,15 @@ const vm = {
     STACK: [],
     REGISTRY: [],
     LABELS: [],
+    VISITS: [],
     GETTHIS: this,
     OBJECT: Object,
     OBJECT_CLONER: E => structuredClone(E),
-    HASH: E => btoa(btoa(btoa(E))).split("").map((E => E.charCodeAt())).reduce(((E, O) => (O ^ E / O | O & O | E << (E.length | E << O | 1e-5) << (E.length | 41 * E.length) << E * E) + "" + E)).split("").slice(6, 26).join(""),
+    HASH: E => btoa(btoa(btoa(E))).split("").map((E => E.charCodeAt())).reduce(((E, O) => (O ^ E / O | O & O | E << (E.length | E << O | 1e-5) << (E.length | 41 * E.length) << E * E) + "" + E)).slice(6, 26),
     CINSERT: E => vm.UNSHIFTER([vm.CPOOL, E]),
     SINSERT: E => vm.UNSHIFTER([vm.STACK, E]),
     LINSERT: E => vm.UNSHIFTER([vm.LABELS, E]),
+    VINSERT: E => vm.UNSHIFTER([vm.VISITS, E]),
     _LOAD: E => vm.SHIFTER(vm.CPOOL),
     _LOADX: E => ($ = vm.CPOOL.slice(0, E), vm.CPOOL = vm.CPOOL.slice(E, vm.CPOOL.length),
         $),
@@ -52,7 +56,7 @@ const vm = {
     _DUP: E => vm.CINSERT(vm.CPOOL[0]),
     _STORE: E => vm.CINSERT(E),
     _GET: E => vm.SINSERT(vm._DIG([E, vm.GETTHIS, vm.GETTHIS]) ?? vm._DIG([E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY])),
-    _INVOKE_JUMP: E => vm._JUMP(E.shift()),
+    _INVOKE_JUMP: E => vm._VISIT([vm.OP_INDEX, E.shift()]),
     _INVOKE_GLOBAL: E => vm.APPLIER([E.shift(), E, vm._LOADX(E.shift()).reverse()]),
     _INVOKE_MATCH: E => ["string", "number"].includes(typeof E[0]) ? vm._INVOKE_JUMP(E) : vm._INVOKE_GLOBAL(E),
     _INVOKE: E => vm._INVOKE_MATCH([vm._SLOAD(), E]),
@@ -60,7 +64,15 @@ const vm = {
     _READ_REGISTRY: E => vm._STORE(vm.REGISTRY[vm.HASH(E)] ?? vm._DIG([E, vm.GETTHIS, vm.GETTHIS])),
     _CREATE_LABEL: E => vm.LINSERT(E),
     _FIND_LABEL: E => vm.LABELS[vm.LABELS.map((E => E[0])).indexOf(E)][1],
-    _JUMP: E => vm.OP_INDEX = vm._FIND_LABEL(E),
+    _ASSIGN: E => {
+        let O = vm.GETTHIS;
+        for (let T = 0; T < E[1].length - 1; T++) O = O[E[1][T]];
+        O[E[1][E[1].length - 1]] = E[0];
+    },
+    _JUMP_OPERATION: E => vm.OP_INDEX = E,
+    _RETURN_VISITOR: E => vm._JUMP_OPERATION(vm.SHIFTER(vm.VISITS)),
+    _VISIT: E => (vm.VINSERT(E.shift()), vm._JUMP_OPERATION(vm._FIND_LABEL(E.shift()))),
+    _JUMP: E => vm._JUMP_OPERATION(vm._FIND_LABEL(E)),
     get OPCODE_KEYS() {
         return vm.APPLIER([vm.OBJECT.keys, vm, [vm.OPCODES]]);
     },
@@ -93,6 +105,12 @@ const vm = {
     },
     set CJUMP(E) {
         vm._LOAD() || vm._JUMP(E[0]);
+    },
+    set RETURN(E) {
+        vm._RETURN_VISITOR(E);
+    },
+    set ASSIGN(E) {
+        vm._ASSIGN(vm._LOADX(2));
     },
     OPERATE: E => vm._STORE(vm._LOADX(2).reverse(vm.SHIFTER(E)).reduce(vm.SHIFTER(E))),
     set OADD(E) {
@@ -158,23 +176,26 @@ const vm = {
         const O = vm.OBJECT_CLONER(E);
         for (; vm.OP_INDEX < vm.OPERATIONS.length;) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
         for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length;) {
-            const E = [vm.CPOOL, vm.STACK, vm.REGISTRY].map((E => {
-                try {
-                    return vm.OBJECT_CLONER(E);
-                } catch (E) {
-                    return ["error"];
-                }
-            }));
+            const E = [vm.CPOOL, vm.STACK, vm.REGISTRY, vm.VISITS].map((E => {
+                    try {
+                        return vm.OBJECT_CLONER(E);
+                    } catch (E) {
+                        return ["error"];
+                    }
+                })),
+                T = vm.OP_INDEX;
             try {
                 vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
-            } catch (T) {
-                const R = vm.OPERATIONS[vm.OP_INDEX - 1];
-                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + (vm.OP_INDEX - 1)),
+            } catch (R) {
+                const S = vm.OPERATIONS[T];
+                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + T),
                     console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES),
                     console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]),
-                    console.error("REGISTERY:", E[2]), console.warn("=========== INSTRUCTION ==========="),
-                    console.error("Operation: " + vm.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R)),
-                    console.warn("=========== STACK TRACE ==========="), void vm.INSN_EXECUTOR(vm.OPCODES[vm.OP_INDEX - 1]);
+                    console.error("Registery:", E[2]), console.error("Visitors :", E[3]), console.warn("=========== INSTRUCTION ==========="),
+                    console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S)),
+                    console.warn("=========== STACK TRACE ==========="), console.warn("Original:"),
+                    console.error(R), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1],
+                    vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[T]);
             }
         }
     },

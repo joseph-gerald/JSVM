@@ -1,5 +1,3 @@
-function greet(name) {
-    console.log("Hello " + name)
-}
-
-greet("Bob")
+const name = 5
+name *= 3
+console.log("NAME: " + name)

@@ -56,10 +56,12 @@ let ORIGINAL_OPCODES: { [key: string]: any } = [
     // Control Flow
 
     "LABEL",    // Label
-    "VISIT",    // Visit label and return back
+    "RETURN",   // Return visitor
+    "VISIT",    // Visit label (same as jump but return will jump to instruction after)
     "CJUMP",    // Jump if false
     "JUMP",     // Jump to label
     "INVOKE",   // Invoke Function
+    "ASSIGN",   // Assign Global Context
 
     // Math
 
@@ -123,6 +125,7 @@ const identifiers: { [key: string]: any } = {
     CINSERT: "CINSERT",
     SINSERT: "SINSERT",
     LINSERT: "LINSERT",
+    VINSERT: "VINSERT",
 
     _LOAD: "_LOAD",
     _LOADX: "_LOADX",
@@ -145,12 +148,18 @@ const identifiers: { [key: string]: any } = {
     REGISTER: "REGISTER",
     READ_REGISTRY: "READ_REGISTRY",
 
+    VISITS: "VISITS",
     LABELS: "LABELS",
     STORE_LABEL: "STORE_LABEL",
     _CREATE_LABEL: "_CREATE_LABEL",
     _FIND_LABEL: "_FIND_LABEL",
 
     _JUMP: "_JUMP",
+    _VISIT: "_VISIT",
+    _RETURN_VISITOR: "_RETURN_VISITOR",
+
+    _ASSIGN: "_ASSIGN",
+    _JUMP_OPERATION: "_JUMP_OPERATION",
 
     OP_INDEX: "OP_INDEX",
     OPERATIONS: "OPERATIONS",
@@ -239,16 +248,18 @@ ${identifiers.CPOOL}: [], // constant pool | - SPLIT >
 ${identifiers.STACK}: [], // virtual stack | - SPLIT >
 ${identifiers.REGISTRY}: [], // variable registry | - SPLIT >
 ${identifiers.LABELS}: [], // label registry | - SPLIT >
+${identifiers.VISITS}: [], // visit stack | - SPLIT >
 
 ${identifiers.GETTHIS}: this, | - SPLIT >
 ${identifiers.OBJECT}: Object, | - SPLIT >
 ${identifiers.OBJECT_CLONER}: _ => structuredClone(_), | - SPLIT >
 
-${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).split("").slice(6,26).join(''), | - SPLIT >
+${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).slice(6,26), | - SPLIT >
 
 ${identifiers.CINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.CPOOL},_]), | - SPLIT >
 ${identifiers.SINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.STACK},_]), | - SPLIT >
 ${identifiers.LINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.LABELS},_]), | - SPLIT >
+${identifiers.VINSERT}: _ => vm.${identifiers.UNSHIFTER}([vm.${identifiers.VISITS},_]), | - SPLIT >
 
 ${identifiers._LOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.CPOOL}), | - SPLIT >
 ${identifiers._LOADX}: _ => ($=vm.${identifiers.CPOOL}.slice(0,_),vm.${identifiers.CPOOL} = vm.${identifiers.CPOOL}.slice(_,vm.${identifiers.CPOOL}.length),$), | - SPLIT >
@@ -259,7 +270,7 @@ ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]),
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])??vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])), | - SPLIT >
 
-${identifiers._INVOKE_JUMP}: _ => vm.${identifiers._JUMP}(_.shift()), | - SPLIT >
+${identifiers._INVOKE_JUMP}: _ => vm.${identifiers._VISIT}([vm.${identifiers.OP_INDEX},_.shift()]), | - SPLIT >
 ${identifiers._INVOKE_GLOBAL}: _ => vm.${identifiers.APPLIER}([_.shift(),_, vm.${identifiers._LOADX}(_.shift()).reverse()]), | - SPLIT >
 ${identifiers._INVOKE_MATCH}: _ => ["string","number"].includes(typeof _[0]) ? vm.${identifiers._INVOKE_JUMP}(_) : vm.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
 ${identifiers._INVOKE}: _ => vm.${identifiers._INVOKE_MATCH}([vm.${identifiers._SLOAD}(),_]), | - SPLIT >
@@ -269,7 +280,12 @@ ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.RE
 ${identifiers._CREATE_LABEL}: _ => vm.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => vm.${identifiers.LABELS}[vm.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
 
-${identifiers._JUMP}: _ => vm.${identifiers.OP_INDEX} = vm.${identifiers._FIND_LABEL}(_), | - SPLIT >
+${identifiers._ASSIGN}: _ => {let context = vm.${identifiers.GETTHIS};for (let $ = 0; $ < _[1].length - 1; $++) context = context[_[1][$]];context[_[1][_[1].length - 1]] = _[0]}, | - SPLIT >
+${identifiers._JUMP_OPERATION}: _ => vm.${identifiers.OP_INDEX} = _, | - SPLIT >
+
+${identifiers._RETURN_VISITOR}: _ => vm.${identifiers._JUMP_OPERATION}(vm.${identifiers.SHIFTER}(vm.${identifiers.VISITS})),
+${identifiers._VISIT}: _ => (vm.${identifiers.VINSERT}(_.shift()),vm.${identifiers._JUMP_OPERATION}(vm.${identifiers._FIND_LABEL}(_.shift()))), | - SPLIT >
+${identifiers._JUMP}: _ => vm.${identifiers._JUMP_OPERATION}(vm.${identifiers._FIND_LABEL}(_)), | - SPLIT >
 
 get ${identifiers.OPCODE_KEYS}() {
     return vm.${identifiers.APPLIER}([vm.${identifiers.OBJECT}.keys,vm,[vm.${identifiers.OPCODES}]]);
@@ -315,6 +331,14 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.CJUMP]}(_) {
     vm.${identifiers._LOAD}() ? _ : vm.${identifiers._JUMP}(_[0]);
 }, | - SPLIT >
 
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.RETURN]}(_) {
+    vm.${identifiers._RETURN_VISITOR}(_);
+}, | - SPLIT >
+
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN]}(_) {
+    vm.${identifiers._ASSIGN}(vm.${identifiers._LOADX}(2));
+}, | - SPLIT >
+
 ${identifiers.OPERATE}: _ =>  vm.${identifiers._STORE}(vm.${identifiers._LOADX}(2).reverse(vm.${identifiers.SHIFTER}(_)).reduce(vm.${identifiers.SHIFTER}(_))),
 
 ${MATH_OPERATIONS}
@@ -348,30 +372,37 @@ ${identifiers.EXECUTE}: _ => {
             shuffle ?
             `vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());` :
             `
-        const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY}].map(_ => {try{return vm.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
+        const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY},vm.${identifiers.VISITS}].map(_ => {try{return vm.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
+        const index = vm.${identifiers.OP_INDEX};
         try {
             vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());
         } catch (e) {
-            const instruction = vm.${identifiers.OPERATIONS}[vm.${identifiers.OP_INDEX}-1];
+            const instruction = vm.${identifiers.OPERATIONS}[index];
             console.warn("===========  EXCEPTION  ===========");
-            console.warn("ERROR OCCURED ON INDEX: " + (vm.${identifiers.OP_INDEX}-1));
+            console.warn("ERROR OCCURED ON INDEX: " + index);
             console.warn("=========== ENVIRONMENT ===========");
             console.error("OPERATIONS:",vm.${identifiers.OPCODES});
 
             console.error("EXECUTION QUEUE:",opsCloned);
 
             console.error("Constants:",cloned[0]);
-
             console.error("Obj Stack:",cloned[1]);
-
-            console.error("REGISTERY:",cloned[2]);
+            console.error("Registery:",cloned[2]);
+            console.error("Visitors :",cloned[3]);
 
             console.warn("=========== INSTRUCTION ===========");
             console.error("Operation: " + vm.${identifiers.OPCODE_KEYS}[instruction.shift()]);
             console.error("Arguments: " + JSON.stringify(instruction));
 
             console.warn("=========== STACK TRACE ===========");
-            vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.OPCODES}[vm.${identifiers.OP_INDEX}-1]);
+            console.warn("Original:");
+            console.error(e);
+            console.warn("Attemping to recreate...");
+            vm.${identifiers.CPOOL} = cloned[0];
+            vm.${identifiers.STACK} = cloned[1];
+            vm.${identifiers.REGISTRY} = cloned[2];
+            vm.${identifiers.VISITS} = cloned[3];
+            vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.OPCODES}[index]);
             return;
         }
             `
