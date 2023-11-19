@@ -55,36 +55,37 @@ let ORIGINAL_OPCODES: { [key: string]: any } = [
 
     // Control Flow
 
-    "LABEL", // Label
-    "VISIT", // Visit label and return back
-    "CJUMP", // Jump if false
-    "JUMP",  // Jump to label
-    "INVOKE",// Invoke Function
+    "LABEL",    // Label
+    "VISIT",    // Visit label and return back
+    "CJUMP",    // Jump if false
+    "JUMP",     // Jump to label
+    "INVOKE",   // Invoke Function
 
     // Math
 
-    "OADD",// Operation: Add
-    "OSUB",// Operation: Subtract
-    "OMUL",// Operation: Multiply
-    "ODIV",// Operation: Division
-    "OXOR",// Operation: Bitwise XOR
-    "OBOR",// Operation: Bitwise OR
-    "OAND",// Operation: Bitwise And
-    "OEXP",// Operation: Exponents
-    "OMOD",// Operation: Modulo
+    "OADD",  // Operation: Add
+    "OSUB",  // Operation: Subtract
+    "OMUL",  // Operation: Multiply
+    "ODIV",  // Operation: Division
+    "OXOR",  // Operation: Bitwise XOR
+    "OBOR",  // Operation: Bitwise OR
+    "OAND",  // Operation: Bitwise And
+    "OEXP",  // Operation: Exponents
+    "OMOD",  // Operation: Modulo
 
     "REGISTER",
     "READ_REGISTRY",
 
     // Logic Operations
-    "AND",// Operation: And
-    "OR",// Operation: Or
-    "OEQ",// Operation: Equality
-    "OIQ",// Operation: Inequality
-    "OGT",// Operation: Greater Than
-    "OGE",// Operation: Greater / Equal
-    "OLT",// Operation: Less Than
-    "OLE",// Operation: Less / Equal
+
+    "AND",  // Operation: And
+    "OR",   // Operation: Or
+    "OEQ",  // Operation: Equality
+    "OIQ",  // Operation: Inequality
+    "OGT",  // Operation: Greater Than
+    "OGE",  // Operation: Greater / Equal
+    "OLT",  // Operation: Less Than
+    "OLE",  // Operation: Less / Equal
 ].reduce((obj, item, index) => ({ ...obj, [item]: index }), {});;
 
 if (shuffle) {
@@ -133,6 +134,11 @@ const identifiers: { [key: string]: any } = {
     _DIG: "_DIG",
 
     _INVOKE: "_INVOKE",
+
+    _INVOKE_MATCH: "_INVOKE_MATCH",
+
+    _INVOKE_JUMP: "_INVOKE_JUMP",
+    _INVOKE_GLOBAL: "_INVOKE_GLOBAL",
     _REGISTER: "_REGISTER",
     _READ_REGISTRY: "_READ_REGISTRY",
 
@@ -251,9 +257,12 @@ ${identifiers._SLOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.STACK}), 
 ${identifiers._DIG}: _ => vm.${identifiers.SHIFTER}(_).reduce((($=vm.${identifiers.SHIFTER}(_), _) => $[_]), vm.${identifiers.SHIFTER}(_)),
 ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]), | - SPLIT >
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
-${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
+${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])??vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])), | - SPLIT >
 
-${identifiers._INVOKE}: _ => vm.${identifiers.APPLIER}([vm.${identifiers._SLOAD}(),_, vm.${identifiers._LOADX}(_).reverse()]), | - SPLIT >
+${identifiers._INVOKE_JUMP}: _ => console.log("JUMP INVOKATION:",_), | - SPLIT >
+${identifiers._INVOKE_GLOBAL}: _ => vm.${identifiers.APPLIER}([_.shift(),_, vm.${identifiers._LOADX}(_.shift()).reverse()]), | - SPLIT >
+${identifiers._INVOKE_MATCH}: _ => ["string","number"].includes(typeof _[0]) ? vm.${identifiers._INVOKE_JUMP}(_) : vm.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
+${identifiers._INVOKE}: _ => vm.${identifiers._INVOKE_MATCH}([vm.${identifiers._SLOAD}(),_]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
 ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])??vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
 
@@ -325,6 +334,9 @@ ${identifiers.EXECUTOR_ARGS}: _ => [vm.${identifiers.SHIFTER}(_), _], | - SPLIT 
 ${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.APPLIER}([vm.${identifiers.EXECUTE_INSN}, _,vm.${identifiers.EXECUTOR_ARGS}(_)]), | - SPLIT >
 
 ${identifiers.EXECUTE}: _ => {
+
+    const opsCloned = vm.${identifiers.OBJECT_CLONER}(_);
+
     while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
         vm.${identifiers.STORE_LABEL}(vm.${identifiers.GET_NEXT_INSTRUCTION}());
     }
@@ -332,8 +344,38 @@ ${identifiers.EXECUTE}: _ => {
     vm.${identifiers.OP_INDEX} = 0;
 
     while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
-        //console.log(vm.${identifiers.OP_INDEX})
-        vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}())
+        ${
+            !shuffle ?
+            `vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());` :
+            `
+        const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY}].map(_ => vm.${identifiers.OBJECT_CLONER}(_));
+        try {
+            vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());
+        } catch (e) {
+            const instruction = vm.${identifiers.OPERATIONS}[vm.${identifiers.OP_INDEX}-1];
+            console.warn("===========  EXCEPTION  ===========");
+            console.warn("ERROR OCCURED ON INDEX: " + (vm.${identifiers.OP_INDEX}-1));
+            console.warn("=========== ENVIRONMENT ===========");
+            console.error("OPERATIONS:",vm.${identifiers.OPCODES});
+
+            console.error("EXECUTION QUEUE:",opsCloned);
+
+            console.error("Constants:",cloned[0]);
+
+            console.error("Obj Stack:",cloned[1]);
+
+            console.error("REGISTERY:",cloned[2]);
+
+            console.warn("=========== INSTRUCTION ===========");
+            console.error("Operation: " + vm.${identifiers.OPCODE_KEYS}[instruction.shift()]);
+            console.error("Arguments: " + JSON.stringify(instruction));
+
+            console.warn("=========== STACK TRACE ===========");
+            console.error(e)
+            return;
+        }
+            `
+        }
     }
 }, | - SPLIT >
 

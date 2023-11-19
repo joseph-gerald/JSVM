@@ -51,8 +51,11 @@ const vm = {
     _DIG: E => vm.SHIFTER(E).reduce(((E = vm.SHIFTER(O), O) => E[O]), vm.SHIFTER(E)),
     _DUP: E => vm.CINSERT(vm.CPOOL[0]),
     _STORE: E => vm.CINSERT(E),
-    _GET: E => vm.SINSERT(vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ])),
-    _INVOKE: E => vm.APPLIER([ vm._SLOAD(), E, vm._LOADX(E).reverse() ]),
+    _GET: E => vm.SINSERT(vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ]) ?? vm._DIG([ E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY ])),
+    _INVOKE_JUMP: E => console.log("JUMP INVOKATION:", E),
+    _INVOKE_GLOBAL: E => vm.APPLIER([ E.shift(), E, vm._LOADX(E.shift()).reverse() ]),
+    _INVOKE_MATCH: E => [ "string", "number" ].includes(typeof E[0]) ? vm._INVOKE_JUMP(E) : vm._INVOKE_GLOBAL(E),
+    _INVOKE: E => vm._INVOKE_MATCH([ vm._SLOAD(), E ]),
     _REGISTER: E => vm.REGISTRY[vm.HASH(vm._LOAD())] = vm._LOAD(),
     _READ_REGISTRY: E => vm._STORE(vm._DIG([ E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY ]) ?? vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ])),
     _CREATE_LABEL: E => vm.LINSERT(E),
@@ -152,10 +155,10 @@ const vm = {
     EXECUTOR_ARGS: E => [ vm.SHIFTER(E), E ],
     INSN_EXECUTOR: E => vm.APPLIER([ vm.EXECUTE_INSN, E, vm.EXECUTOR_ARGS(E) ]),
     EXECUTE_PROXY: E => {
-        for (;vm.OP_INDEX < vm.OPERATIONS.length; ) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
+        for (vm.OBJECT_CLONER(E); vm.OP_INDEX < vm.OPERATIONS.length; ) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
         for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length; ) vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
     },
     EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
 
-vm.EXECUTE([ [ vm.OPCODES.STORE, "0x7CF3F" ], [ vm.OPCODES.STORE, "greet" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.JUMP, "0x38068" ], [ vm.OPCODES.LABEL, "0x7CF3F" ], [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.STORE, "Hello " ], [ vm.OPCODES.READ_REGISTRY, [ "greet", "0x7CF3F", "name" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.LABEL, "0x38068" ], [ vm.OPCODES.GET, [ "greet" ] ], [ vm.OPCODES.STORE, "Bob" ], [ vm.OPCODES.INVOKE, 1 ] ]);
+vm.EXECUTE([ [ vm.OPCODES.STORE, "0x89161" ], [ vm.OPCODES.STORE, "greet" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.JUMP, "0x6C38C" ], [ vm.OPCODES.LABEL, "0x89161" ], [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.STORE, "Hello " ], [ vm.OPCODES.READ_REGISTRY, [ "greet", "0x89161", "name" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.LABEL, "0x6C38C" ], [ vm.OPCODES.GET, [ "greet" ] ], [ vm.OPCODES.STORE, "Bob" ], [ vm.OPCODES.INVOKE, 1 ] ]);
