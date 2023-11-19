@@ -259,12 +259,12 @@ ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]),
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])??vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])), | - SPLIT >
 
-${identifiers._INVOKE_JUMP}: _ => console.log("JUMP INVOKATION:",_), | - SPLIT >
+${identifiers._INVOKE_JUMP}: _ => vm.${identifiers._JUMP}(_.shift()), | - SPLIT >
 ${identifiers._INVOKE_GLOBAL}: _ => vm.${identifiers.APPLIER}([_.shift(),_, vm.${identifiers._LOADX}(_.shift()).reverse()]), | - SPLIT >
 ${identifiers._INVOKE_MATCH}: _ => ["string","number"].includes(typeof _[0]) ? vm.${identifiers._INVOKE_JUMP}(_) : vm.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
 ${identifiers._INVOKE}: _ => vm.${identifiers._INVOKE_MATCH}([vm.${identifiers._SLOAD}(),_]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
-${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])??vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
+${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
 
 ${identifiers._CREATE_LABEL}: _ => vm.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => vm.${identifiers.LABELS}[vm.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
@@ -345,10 +345,10 @@ ${identifiers.EXECUTE}: _ => {
 
     while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
         ${
-            !shuffle ?
+            shuffle ?
             `vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());` :
             `
-        const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY}].map(_ => vm.${identifiers.OBJECT_CLONER}(_));
+        const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY}].map(_ => {try{return vm.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
         try {
             vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());
         } catch (e) {
@@ -371,7 +371,7 @@ ${identifiers.EXECUTE}: _ => {
             console.error("Arguments: " + JSON.stringify(instruction));
 
             console.warn("=========== STACK TRACE ===========");
-            console.error(e)
+            vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.OPCODES}[vm.${identifiers.OP_INDEX}-1]);
             return;
         }
             `

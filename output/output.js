@@ -52,12 +52,12 @@ const vm = {
     _DUP: E => vm.CINSERT(vm.CPOOL[0]),
     _STORE: E => vm.CINSERT(E),
     _GET: E => vm.SINSERT(vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ]) ?? vm._DIG([ E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY ])),
-    _INVOKE_JUMP: E => console.log("JUMP INVOKATION:", E),
+    _INVOKE_JUMP: E => vm._JUMP(E.shift()),
     _INVOKE_GLOBAL: E => vm.APPLIER([ E.shift(), E, vm._LOADX(E.shift()).reverse() ]),
     _INVOKE_MATCH: E => [ "string", "number" ].includes(typeof E[0]) ? vm._INVOKE_JUMP(E) : vm._INVOKE_GLOBAL(E),
     _INVOKE: E => vm._INVOKE_MATCH([ vm._SLOAD(), E ]),
     _REGISTER: E => vm.REGISTRY[vm.HASH(vm._LOAD())] = vm._LOAD(),
-    _READ_REGISTRY: E => vm._STORE(vm._DIG([ E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY ]) ?? vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ])),
+    _READ_REGISTRY: E => vm._STORE(vm.REGISTRY[vm.HASH(E)] ?? vm._DIG([ E, vm.GETTHIS, vm.GETTHIS ])),
     _CREATE_LABEL: E => vm.LINSERT(E),
     _FIND_LABEL: E => vm.LABELS[vm.LABELS.map((E => E[0])).indexOf(E)][1],
     _JUMP: E => vm.OP_INDEX = vm._FIND_LABEL(E),
@@ -155,10 +155,30 @@ const vm = {
     EXECUTOR_ARGS: E => [ vm.SHIFTER(E), E ],
     INSN_EXECUTOR: E => vm.APPLIER([ vm.EXECUTE_INSN, E, vm.EXECUTOR_ARGS(E) ]),
     EXECUTE_PROXY: E => {
-        for (vm.OBJECT_CLONER(E); vm.OP_INDEX < vm.OPERATIONS.length; ) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
-        for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length; ) vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
+        const O = vm.OBJECT_CLONER(E);
+        for (;vm.OP_INDEX < vm.OPERATIONS.length; ) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
+        for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length; ) {
+            const E = [ vm.CPOOL, vm.STACK, vm.REGISTRY ].map((E => {
+                try {
+                    return vm.OBJECT_CLONER(E);
+                } catch (E) {
+                    return [ "error" ];
+                }
+            }));
+            try {
+                vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
+            } catch (T) {
+                const R = vm.OPERATIONS[vm.OP_INDEX - 1];
+                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + (vm.OP_INDEX - 1)), 
+                console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES), 
+                console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]), 
+                console.error("REGISTERY:", E[2]), console.warn("=========== INSTRUCTION ==========="), 
+                console.error("Operation: " + vm.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R)), 
+                console.warn("=========== STACK TRACE ==========="), void vm.INSN_EXECUTOR(vm.OPCODES[vm.OP_INDEX - 1]);
+            }
+        }
     },
     EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
 
-vm.EXECUTE([ [ vm.OPCODES.STORE, "0x89161" ], [ vm.OPCODES.STORE, "greet" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.JUMP, "0x6C38C" ], [ vm.OPCODES.LABEL, "0x89161" ], [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.STORE, "Hello " ], [ vm.OPCODES.READ_REGISTRY, [ "greet", "0x89161", "name" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.LABEL, "0x6C38C" ], [ vm.OPCODES.GET, [ "greet" ] ], [ vm.OPCODES.STORE, "Bob" ], [ vm.OPCODES.INVOKE, 1 ] ]);
+vm.EXECUTE([ [ vm.OPCODES.STORE, "0x91A4A" ], [ vm.OPCODES.STORE, "greet" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.JUMP, "0x10D90" ], [ vm.OPCODES.LABEL, "0x91A4A" ], [ vm.OPCODES.STORE, [ "greet", "0x91A4A", "name" ] ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.STORE, "Hello " ], [ vm.OPCODES.READ_REGISTRY, [ "greet", "0x91A4A", "name" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.LABEL, "0x10D90" ], [ vm.OPCODES.GET, [ "greet" ] ], [ vm.OPCODES.STORE, "Bob" ], [ vm.OPCODES.INVOKE, 1 ] ]);

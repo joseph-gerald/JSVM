@@ -118,11 +118,6 @@ export const transform = async (code: string) => {
                 console.log(node.id?.loc)
 
                 const params = node.params;
-
-                for (const param of params) {
-                    setHandled(param)
-                }
-
                 const body = node.body;
 
                 addInstruction("STORE", '"' + start + '"')
@@ -133,6 +128,14 @@ export const transform = async (code: string) => {
                 addInstruction("LABEL", '"' + start + '"')
 
                 context = [id?.name,start]
+
+                for (const param of params) {
+                    if(!types.isIdentifier(param)) continue;
+                    addInstruction("STORE", JSON.stringify(context.concat(param.name)));
+                    addInstruction("REGISTER");
+                    setHandled(param);
+                }
+
 
                 handleNode(body);
                 
