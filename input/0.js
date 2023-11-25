@@ -1,1 +1,1 @@
-console.log(Date.now(),Date.now()+1000)
+console.log(Date.now()*0.5,Date.now()+1000)

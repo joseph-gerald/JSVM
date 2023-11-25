@@ -15,6 +15,7 @@ export const transform = async (code: string) => {
     });
 
     let context: any[] = [];
+    let handling_call_expression = 0;
     let output = "";
     let store_invokes = 0;
 
@@ -182,6 +183,8 @@ export const transform = async (code: string) => {
             // Expression
             case "CallExpression":
                 if (!types.isCallExpression(node)) return;
+                if (handling_call_expression > 0) store_invokes++;
+                handling_call_expression++;
 
                 // coolObject.coolFunction()
                 if (types.isMemberExpression(node.callee)) {
@@ -210,13 +213,13 @@ export const transform = async (code: string) => {
                     } else if (types.isBinaryExpression(arg)) {
                         args.push(handleNode(arg));
                     } else if (types.isCallExpression(arg)) {
-                        store_invokes++;
                         args.push(handleNode(arg))
                     } else {
                         console.log("Argument type not implemented: " + arg.type)
                     }
                 }
 
+                handling_call_expression--;
                 addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", [args.length])
                 break;
             case "MemberExpression":

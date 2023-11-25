@@ -192,12 +192,12 @@ const vm = {
             try {
                 vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
             } catch (R) {
-                const I = vm.OPERATIONS[T];
+                const S = vm.OPERATIONS[T];
                 return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + T),
                     console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES),
                     console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]),
                     console.error("Registery:", E[2]), console.error("Visitors :", E[3]), console.warn("=========== INSTRUCTION ==========="),
-                    console.error("Operation: " + vm.OPCODE_KEYS[I.shift()]), console.error("Arguments: " + JSON.stringify(I)),
+                    console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S)),
                     console.warn("=========== STACK TRACE ==========="), console.warn("Original:"),
                     console.error(R), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1],
                     vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[T]);
