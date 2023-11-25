@@ -3,35 +3,37 @@ const vm = {
     OPCODES: {
         STORE: 0,
         DUP: 1,
-        LOAD: 2,
-        GOTO: 3,
-        GET: 4,
-        LABEL: 5,
-        RETURN: 6,
-        VISIT: 7,
-        CJUMP: 8,
-        JUMP: 9,
-        INVOKE: 10,
-        ASSIGN: 11,
-        OADD: 12,
-        OSUB: 13,
-        OMUL: 14,
-        ODIV: 15,
-        OXOR: 16,
-        OBOR: 17,
-        OAND: 18,
-        OEXP: 19,
-        OMOD: 20,
-        REGISTER: 21,
-        READ_REGISTRY: 22,
-        AND: 23,
-        OR: 24,
-        OEQ: 25,
-        OIQ: 26,
-        OGT: 27,
-        OGE: 28,
-        OLT: 29,
-        OLE: 30
+        DEL: 2,
+        LOAD: 3,
+        GOTO: 4,
+        GET: 5,
+        LABEL: 6,
+        RETURN: 7,
+        VISIT: 8,
+        CJUMP: 9,
+        JUMP: 10,
+        INVOKE: 11,
+        SINVOKE: 12,
+        ASSIGN: 13,
+        OADD: 14,
+        OSUB: 15,
+        OMUL: 16,
+        ODIV: 17,
+        OXOR: 18,
+        OBOR: 19,
+        OAND: 20,
+        OEXP: 21,
+        OMOD: 22,
+        REGISTER: 23,
+        READ_REGISTRY: 24,
+        AND: 25,
+        OR: 26,
+        OEQ: 27,
+        OIQ: 28,
+        OGT: 29,
+        OGE: 30,
+        OLT: 31,
+        OLE: 32
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -90,6 +92,9 @@ const vm = {
     },
     set INVOKE(E) {
         vm._INVOKE(vm.SHIFTER(E));
+    },
+    set SINVOKE(E) {
+        vm._STORE(vm._INVOKE(vm.SHIFTER(E)));
     },
     set REGISTER(E) {
         vm._REGISTER(vm.SHIFTER(E));
@@ -186,12 +191,12 @@ const vm = {
             try {
                 vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
             } catch (R) {
-                const S = vm.OPERATIONS[T];
+                const I = vm.OPERATIONS[T];
                 return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + T), 
                 console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES), 
                 console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]), 
                 console.error("Registery:", E[2]), console.error("Visitors :", E[3]), console.warn("=========== INSTRUCTION ==========="), 
-                console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S)), 
+                console.error("Operation: " + vm.OPCODE_KEYS[I.shift()]), console.error("Arguments: " + JSON.stringify(I)), 
                 console.warn("=========== STACK TRACE ==========="), console.warn("Original:"), 
                 console.error(R), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1], 
                 vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[T]);
@@ -201,4 +206,4 @@ const vm = {
     EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
 
-vm.EXECUTE([ [ vm.OPCODES.STORE, 5 ], [ vm.OPCODES.STORE, "name" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.READ_REGISTRY, "name" ], [ vm.OPCODES.STORE, 3 ], [ vm.OPCODES.OMUL ], [ vm.OPCODES.STORE, "name" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.STORE, "NAME: " ], [ vm.OPCODES.READ_REGISTRY, [ "name" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ] ]);
+vm.EXECUTE([ [ vm.OPCODES.GET, [ "console", "log" ] ], [ vm.OPCODES.GET, [ "Date", "now" ] ], [ vm.OPCODES.SINVOKE, 0 ], [ vm.OPCODES.GET, [ "Date", "now" ] ], [ vm.OPCODES.INVOKE, 0 ], [ vm.OPCODES.STORE, 1e3 ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 2 ] ]);

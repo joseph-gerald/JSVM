@@ -47,9 +47,10 @@ async function minify(code: string) {
 }
 
 let ORIGINAL_OPCODES: { [key: string]: any } = [
-    "STORE",    // store to constant pool / heap
-    "DUP",      // duplicate item from stack
-    "LOAD",     // load from top of stack
+    "STORE",    // store to constant pool
+    "DUP",      // duplicate item from top of constant pool
+    "DEL",      // delete item from top of constant pool
+    "LOAD",     // load from top of constant pool
     "GOTO",     // jump to bytecode index
     "GET",      // fetch from global context
 
@@ -61,6 +62,7 @@ let ORIGINAL_OPCODES: { [key: string]: any } = [
     "CJUMP",    // Jump if false
     "JUMP",     // Jump to label
     "INVOKE",   // Invoke Function
+    "SINVOKE",   // Invoke then store Function
     "ASSIGN",   // Assign Global Context
 
     // Math
@@ -309,6 +311,10 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.STORE]}(_) {
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) { 
     vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_));
+}, | - SPLIT >
+
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.SINVOKE]}(_) { 
+    vm.${identifiers._STORE}(vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_)));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.REGISTER]}(_) {

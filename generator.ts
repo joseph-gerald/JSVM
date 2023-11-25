@@ -16,6 +16,7 @@ export const transform = async (code: string) => {
 
     let context: any[] = [];
     let output = "";
+    let store_invokes = 0;
 
     const handledNodeTypes = new Set();
 
@@ -208,12 +209,15 @@ export const transform = async (code: string) => {
                         args.push(addInstruction("STORE", arg.value))
                     } else if (types.isBinaryExpression(arg)) {
                         args.push(handleNode(arg));
+                    } else if (types.isCallExpression(arg)) {
+                        store_invokes++;
+                        args.push(handleNode(arg))
                     } else {
                         console.log("Argument type not implemented: " + arg.type)
                     }
                 }
 
-                addInstruction("INVOKE", [args.length])
+                addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", [args.length])
                 break;
             case "MemberExpression":
                 if (!types.isMemberExpression(node)) return;
@@ -256,9 +260,12 @@ export const transform = async (code: string) => {
 
                         if(types.isIdentifier(node.left)) {
                             setHandled(node.left);
+                            
                             addInstruction("READ_REGISTRY", '"' + node.left.name + '"')
                             handleValue(node.right)
+
                             addInstruction(code_utils.operations[operation])
+                            
                             addInstruction("STORE", '"' + node.left.name + '"');
                             addInstruction("REGISTER");
                         }
