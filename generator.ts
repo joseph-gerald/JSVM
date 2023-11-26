@@ -117,7 +117,7 @@ export const transform = async (code: string) => {
                 const id = node.id;
 
                 setHandled(node.id);
-                console.log(node.id?.loc)
+                //console.log(node.id?.loc)
 
                 const params = node.params;
                 const body = node.body;
@@ -131,7 +131,7 @@ export const transform = async (code: string) => {
 
                 context = [id?.name,start]
 
-                for (const param of params) {
+                for (const param of params.reverse()) { // reversed because first in first out
                     if(!types.isIdentifier(param)) continue;
                     addInstruction("STORE", JSON.stringify(context.concat(param.name)));
                     addInstruction("REGISTER");
@@ -166,7 +166,8 @@ export const transform = async (code: string) => {
                 if (
                     types.isIdentifier(node.init) ||
                     types.isBinaryExpression(node.init) ||
-                    types.isObjectExpression(node.init))
+                    types.isObjectExpression(node.init) ||
+                    types.isCallExpression(node.init))
                 {
                     handleNode(node.init)
                 }
@@ -221,6 +222,7 @@ export const transform = async (code: string) => {
 
                 handling_call_expression--;
                 addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", [args.length])
+                store_invokes = Math.max(store_invokes,0);
                 break;
             case "MemberExpression":
                 if (!types.isMemberExpression(node)) return;
@@ -319,6 +321,13 @@ export const transform = async (code: string) => {
                 handleNode(node.expression);
                 break;
             case "ReturnStatement":
+                if(!types.isReturnStatement(node)) return;
+                if(node.argument) {
+                    const prev = store_invokes;
+                    store_invokes++;
+                    handleNode(node.argument)
+                    store_invokes = prev;
+                }
                 addInstruction("RETURN")
                 break;
 
@@ -416,6 +425,14 @@ export const transform = async (code: string) => {
     output += "])";
     //console.log(output)
 
+    const scoped = false;
+
+    if(scoped) {
+        output = `(() => {
+            ${output}
+        })();`
+    }
+
     try {
         output = await code_utils.minify(output)
     } catch (ignore) { }
@@ -432,5 +449,5 @@ export const transform = async (code: string) => {
     fs.writeFileSync("output/vm.js", beautify(vm));
     fs.writeFileSync("output/bytecode.js", beautify(bytecode));
 
-    return output;
+    return (output);
 };

@@ -47,6 +47,8 @@ async function minify(code: string) {
 }
 
 let ORIGINAL_OPCODES: { [key: string]: any } = [
+    "DEBUG",    // Logs environment to console    
+
     "STORE",    // store to constant pool
     "DUP",      // duplicate item from top of constant pool
     "DEL",      // delete item from top of constant pool
@@ -134,6 +136,7 @@ const identifiers: { [key: string]: any } = {
     _SLOAD: "_SLOAD",
 
     _DUP: "_DUP",
+    _SDUP: "_SDUP",
     _STORE: "_STORE",
     _GET: "_GET",
     _DIG: "_DIG",
@@ -182,6 +185,7 @@ const identifiers: { [key: string]: any } = {
     GET_NEXT_INSTRUCTION: "GET_NEXT_INSTRUCTION",
 
     OBJECT_CLONER: "OBJECT_CLONER",
+    DEBUG: "DEBUG",
 }
 
 const getInstruction = (x: any) => {
@@ -269,12 +273,13 @@ ${identifiers._SLOAD}: _ => vm.${identifiers.SHIFTER}(vm.${identifiers.STACK}), 
 
 ${identifiers._DIG}: _ => vm.${identifiers.SHIFTER}(_).reduce((($=vm.${identifiers.SHIFTER}(_), _) => $[_]), vm.${identifiers.SHIFTER}(_)),
 ${identifiers._DUP}: _ => vm.${identifiers.CINSERT}(vm.${identifiers.CPOOL}[0]), | - SPLIT >
+${identifiers._SDUP}: _ => vm.${identifiers.SINSERT}(vm.${identifiers.STACK}[0]), | - SPLIT >
 ${identifiers._STORE}: _ => vm.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => vm.${identifiers.SINSERT}(vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])??vm.${identifiers._DIG}([_.map(_ => vm.${identifiers.HASH}(_)),vm.${identifiers.REGISTRY},vm.${identifiers.REGISTRY}])), | - SPLIT >
 
 ${identifiers._INVOKE_JUMP}: _ => vm.${identifiers._VISIT}([vm.${identifiers.OP_INDEX},_.shift()]), | - SPLIT >
 ${identifiers._INVOKE_GLOBAL}: _ => vm.${identifiers.APPLIER}([_.shift(),_, vm.${identifiers._LOADX}(_.shift()).reverse()]), | - SPLIT >
-${identifiers._INVOKE_MATCH}: _ => ["string","number"].includes(typeof _[0]) ? vm.${identifiers._INVOKE_JUMP}(_) : vm.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
+${identifiers._INVOKE_MATCH}: _ => [typeof ""].includes(typeof _[0]) ? vm.${identifiers._INVOKE_JUMP}(_) : vm.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
 ${identifiers._INVOKE}: _ => vm.${identifiers._INVOKE_MATCH}([vm.${identifiers._SLOAD}(),_]), | - SPLIT >
 ${identifiers._REGISTER}: _ => vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(vm.${identifiers._LOAD}())] = vm.${identifiers._LOAD}(), | - SPLIT >
 ${identifiers._READ_REGISTRY}: _ => vm.${identifiers._STORE}(vm.${identifiers.REGISTRY}[vm.${identifiers.HASH}(_)]??vm.${identifiers._DIG}([_,vm.${identifiers.GETTHIS},vm.${identifiers.GETTHIS}])), | - SPLIT >
@@ -314,7 +319,11 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.SINVOKE]}(_) { 
-    vm.${identifiers._STORE}(vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_)));
+    if((vm.${identifiers._SDUP}(),typeof "" == typeof vm.${identifiers._SLOAD}())) {
+        vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_));
+    } else {
+        vm.${identifiers._STORE}(vm.${identifiers._INVOKE}(vm.${identifiers.SHIFTER}(_)));
+    }
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.REGISTER]}(_) {
@@ -363,6 +372,24 @@ ${identifiers.EXECUTOR_ARGS}: _ => [vm.${identifiers.SHIFTER}(_), _], | - SPLIT 
 
 ${identifiers.INSN_EXECUTOR}: _ => vm.${identifiers.APPLIER}([vm.${identifiers.EXECUTE_INSN}, _,vm.${identifiers.EXECUTOR_ARGS}(_)]), | - SPLIT >
 
+${shuffle ? "" : `set ${OPCODE_KEYS[ORIGINAL_OPCODES.DEBUG]}(_) {
+    const index = vm.${identifiers.OP_INDEX};
+    const instruction = structuredClone(vm.${identifiers.OPERATIONS}[index-1]);
+    console.warn("===========    DEBUG    ===========");
+    console.warn("DEBUG OCCURED ON INDEX: " + index);
+    console.warn("=========== ENVIRONMENT ===========");
+    console.error("OPERATIONS:",vm.${identifiers.OPCODES});
+
+    console.error("Constants:",vm.${identifiers.CPOOL});
+    console.error("Obj Stack:",vm.${identifiers.STACK});
+    console.error("Registery:",vm.${identifiers.REGISTRY});
+    console.error("Visitors :",vm.${identifiers.VISITS});
+
+    console.warn("=========== INSTRUCTION ===========");
+    console.error("Operation: " + vm.${identifiers.OPCODE_KEYS}[instruction.shift()]);
+    console.error("Arguments: " + JSON.stringify(instruction));
+}, | - SPLIT >`}
+
 ${identifiers.EXECUTE}: _ => {
 
     const opsCloned = vm.${identifiers.OBJECT_CLONER}(_);
@@ -374,10 +401,9 @@ ${identifiers.EXECUTE}: _ => {
     vm.${identifiers.OP_INDEX} = 0;
 
     while (vm.${identifiers.OP_INDEX} < vm.${identifiers.OPERATIONS}.length) {
-        ${
-            shuffle ?
-            `vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());` :
-            `
+        ${shuffle ?
+        `vm.${identifiers.INSN_EXECUTOR}(vm.${identifiers.GET_NEXT_INSTRUCTION}());` :
+        `
         const cloned = [vm.${identifiers.CPOOL},vm.${identifiers.STACK},vm.${identifiers.REGISTRY},vm.${identifiers.VISITS}].map(_ => {try{return vm.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
         const index = vm.${identifiers.OP_INDEX};
         try {
@@ -412,7 +438,7 @@ ${identifiers.EXECUTE}: _ => {
             return;
         }
             `
-        }
+    }
     }
 }, | - SPLIT >
 

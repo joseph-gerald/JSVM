@@ -1,1 +1,2 @@
-console.log(Date.now()*0.5,Date.now()+1000)
+const prop = "log";
+console[prop]("BRUH")
