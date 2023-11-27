@@ -62,6 +62,16 @@ export const transform = async (code: string) => {
         return keys;
     }
 
+    const handleTest = (node: types.Node) => {
+        if (types.isBinaryExpression(node)) {
+            handleNode(node);
+        }
+
+        if (types.isIdentifier(node)) {
+            handleNode(node);
+        }
+    }
+
     const handleLiteral = (node: types.Node) => {
         if (types.isNumericLiteral(node) || types.isStringLiteral(node)) {
             addInstruction("STORE", types.isStringLiteral(node) ? '"' + node.value + '"' : node.value);
@@ -372,23 +382,37 @@ export const transform = async (code: string) => {
                 // Set label at start of block statement so it can jump up to repeat
                 addInstruction("LABEL", '"' + loopStart + '"')
 
+                // handle test/condition
+                handleTest(node.test)
+                addInstruction("CJUMP", '"' + end + '"')
+
                 handleNode(node.body);
 
-                // handle test/condition
-                if (types.isBinaryExpression(node.test)) {
-                    handleNode(node.test);
-                }
-
-                if (types.isIdentifier(node.test)) {
-                    handleNode(node.test);
-                }
-
-                addInstruction("STORE", 1);
-                addInstruction("OSUB");
-
-                addInstruction("CJUMP", '"' + loopStart + '"')
+                addInstruction("JUMP", '"' + loopStart + '"')
+                addInstruction("LABEL", '"' + end + '"')
                 break;
+            case "ForStatement":
+                if(!types.isForStatement(node)) return;
+                
+                var loopStart = string_utils.get_jump_address();
+                var end = string_utils.get_jump_address();
 
+                // let i = 0 - not always present
+                if(node.init) handleNode(node.init);
+
+                addInstruction("LABEL", '"' + loopStart + '"')
+
+                if(node.update) handleNode(node.update)
+                if(node.test)   handleTest(node.test)
+
+                addInstruction("CJUMP", '"' + end + '"')
+
+                handleNode(node.body);
+
+                addInstruction("JUMP", '"' + loopStart + '"')
+                addInstruction("LABEL", '"' + end + '"')
+                break;
+                
             // Default case for unhandled node types
             default:
                 if (!handledNodeTypes.has(nodeType)) {

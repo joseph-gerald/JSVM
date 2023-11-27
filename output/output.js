@@ -20,21 +20,23 @@ const vm = {
         OSUB: 16,
         OMUL: 17,
         ODIV: 18,
-        OXOR: 19,
-        OBOR: 20,
-        OAND: 21,
-        OEXP: 22,
-        OMOD: 23,
-        REGISTER: 24,
-        READ_REGISTRY: 25,
-        AND: 26,
+        OEXP: 19,
+        OMOD: 20,
+        OXOR: 21,
+        OBOR: 22,
+        OAND: 23,
+        ONOT: 24,
+        REGISTER: 25,
+        READ_REGISTRY: 26,
         OR: 27,
-        OEQ: 28,
-        OIQ: 29,
-        OGT: 30,
-        OGE: 31,
-        OLT: 32,
-        OLE: 33
+        NOT: 28,
+        AND: 29,
+        OEQ: 30,
+        OIQ: 31,
+        OGT: 32,
+        OGE: 33,
+        OLT: 34,
+        OLE: 35
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -70,7 +72,7 @@ const vm = {
     _FIND_LABEL: E => vm.LABELS[vm.LABELS.map((E => E[0])).indexOf(E)][1],
     _ASSIGN: E => {
         let O = vm.GETTHIS;
-        for (let T = 0; T < E[1].length - 1; T++) O = O[E[1][T]];
+        for (let S = 0; S < E[1].length - 1; S++) O = O[E[1][S]];
         O[E[1][E[1].length - 1]] = E[0];
     },
     _JUMP_OPERATION: E => vm.OP_INDEX = E,
@@ -171,6 +173,12 @@ const vm = {
     set OLE(E) {
         vm.OPERATE([ E, (E, O) => O >= E ]);
     },
+    set undefined(E) {
+        vm.OPERATE([ E, E => ~E ]);
+    },
+    set undefined(E) {
+        vm.OPERATE([ E, E => !E ]);
+    },
     SHIFTER: E => E.shift(),
     UNSHIFTER: E => vm.SHIFTER(E).unshift(vm.SHIFTER(E)),
     APPLIER: E => vm.SHIFTER(E).apply(vm.SHIFTER(E), vm.SHIFTER(E)),
@@ -180,12 +188,12 @@ const vm = {
     EXECUTOR_ARGS: E => [ vm.SHIFTER(E), E ],
     INSN_EXECUTOR: E => vm.APPLIER([ vm.EXECUTE_INSN, E, vm.EXECUTOR_ARGS(E) ]),
     set DEBUG(E) {
-        const O = vm.OP_INDEX, T = structuredClone(vm.OPERATIONS[O - 1]);
+        const O = vm.OP_INDEX, S = structuredClone(vm.OPERATIONS[O - 1]);
         console.warn("===========    DEBUG    ==========="), console.warn("DEBUG OCCURED ON INDEX: " + O), 
         console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES), 
         console.error("Constants:", vm.CPOOL), console.error("Obj Stack:", vm.STACK), console.error("Registery:", vm.REGISTRY), 
         console.error("Visitors :", vm.VISITS), console.warn("=========== INSTRUCTION ==========="), 
-        console.error("Operation: " + vm.OPCODE_KEYS[T.shift()]), console.error("Arguments: " + JSON.stringify(T));
+        console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S));
     },
     EXECUTE_PROXY: E => {
         const O = vm.OBJECT_CLONER(E);
@@ -197,23 +205,23 @@ const vm = {
                 } catch (E) {
                     return [ "error" ];
                 }
-            })), T = vm.OP_INDEX;
+            })), S = vm.OP_INDEX;
             try {
                 vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
-            } catch (R) {
-                const S = vm.OPERATIONS[T];
-                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + T), 
+            } catch (T) {
+                const R = vm.OPERATIONS[S];
+                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + S), 
                 console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES), 
                 console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]), 
                 console.error("Registery:", E[2]), console.error("Visitors :", E[3]), console.warn("=========== INSTRUCTION ==========="), 
-                console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S)), 
+                console.error("Operation: " + vm.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R)), 
                 console.warn("=========== STACK TRACE ==========="), console.warn("Original:"), 
-                console.error(R), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1], 
-                vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[T]);
+                console.error(T), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1], 
+                vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[S]);
             }
         }
     },
     EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
 
-vm.EXECUTE([ [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "prop" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.READ_REGISTRY, "prop" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "BRUH" ], [ vm.OPCODES.INVOKE, 1 ] ]);
+vm.EXECUTE([ [ vm.OPCODES.STORE, 1 ], [ vm.OPCODES.STORE, "age" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.LABEL, "0x72808" ], [ vm.OPCODES.READ_REGISTRY, [ "age" ] ], [ vm.OPCODES.STORE, 100 ], [ vm.OPCODES.OLT ], [ vm.OPCODES.CJUMP, "0xD7EC7" ], [ vm.OPCODES.READ_REGISTRY, [ "age" ] ], [ vm.OPCODES.STORE, 20 ], [ vm.OPCODES.OGT ], [ vm.OPCODES.STORE, "canDrink" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "Age: " ], [ vm.OPCODES.READ_REGISTRY, [ "age" ] ], [ vm.OPCODES.OADD ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.READ_REGISTRY, [ "age" ] ], [ vm.OPCODES.STORE, 99 ], [ vm.OPCODES.OEQ ], [ vm.OPCODES.CJUMP, "0xBE2DB" ], [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "Almost dead" ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.JUMP, "0x3C6B9" ], [ vm.OPCODES.LABEL, "0xBE2DB" ], [ vm.OPCODES.LABEL, "0x3C6B9" ], [ vm.OPCODES.READ_REGISTRY, [ "canDrink" ] ], [ vm.OPCODES.CJUMP, "0xF5CAE" ], [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "You can drink!" ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.JUMP, "0x45861" ], [ vm.OPCODES.LABEL, "0xF5CAE" ], [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "You not can drink!" ], [ vm.OPCODES.INVOKE, 1 ], [ vm.OPCODES.LABEL, "0x45861" ], [ vm.OPCODES.READ_REGISTRY, [ "age" ] ], [ vm.OPCODES.STORE, 1 ], [ vm.OPCODES.OADD ], [ vm.OPCODES.STORE, "age" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.JUMP, "0x72808" ], [ vm.OPCODES.LABEL, "0xD7EC7" ], [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "Dead" ], [ vm.OPCODES.INVOKE, 1 ] ]);

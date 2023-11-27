@@ -46,7 +46,7 @@ async function minify(code: string) {
     return (await terser.minify(code, options)).code as string;
 }
 
-let ORIGINAL_OPCODES: { [key: string]: any } = [
+const OPCODE_ARRAY = [
     "DEBUG",    // Logs environment to console    
 
     "STORE",    // store to constant pool
@@ -67,32 +67,44 @@ let ORIGINAL_OPCODES: { [key: string]: any } = [
     "SINVOKE",   // Invoke then store Function
     "ASSIGN",   // Assign Global Context
 
-    // Math
+    // // Operations
+
+    // Math Operations
 
     "OADD",  // Operation: Add
     "OSUB",  // Operation: Subtract
     "OMUL",  // Operation: Multiply
     "ODIV",  // Operation: Division
+    "OEXP",  // Operation: Exponents
+    "OMOD",  // Operation: Modulo
     "OXOR",  // Operation: Bitwise XOR
     "OBOR",  // Operation: Bitwise OR
     "OAND",  // Operation: Bitwise And
-    "OEXP",  // Operation: Exponents
-    "OMOD",  // Operation: Modulo
+    "ONOT",  // Operation: Bitwise NOT
 
     "REGISTER",
     "READ_REGISTRY",
 
     // Logic Operations
 
-    "AND",  // Operation: And
     "OR",   // Operation: Or
+    "NOT",  // Operation: Not
+    "AND",  // Operation: And
     "OEQ",  // Operation: Equality
     "OIQ",  // Operation: Inequality
     "OGT",  // Operation: Greater Than
     "OGE",  // Operation: Greater / Equal
     "OLT",  // Operation: Less Than
     "OLE",  // Operation: Less / Equal
-].reduce((obj, item, index) => ({ ...obj, [item]: index }), {});;
+]
+
+if(shuffle) {
+    for (let i = 0; i < 100; i++) {
+        OPCODE_ARRAY.push(btoa(Math.random().toString(16)).split("=").join(""))
+    }
+}
+
+let ORIGINAL_OPCODES: { [key: string]: any } = OPCODE_ARRAY.reduce((obj, item, index) => ({ ...obj, [item]: index }), {});;
 
 if (shuffle) {
     const opcodes_ids = string_utils.shuffleArray(Object.keys(ORIGINAL_OPCODES));
@@ -203,7 +215,7 @@ if (shuffle) {
     }
 }
 
-const operations: { [key: string]: any } = {
+const binaryOperations: { [key: string]: string } = {
     // Math
     "+": "OADD",
     "-": "OSUB",
@@ -220,23 +232,26 @@ const operations: { [key: string]: any } = {
     "||": "OR",
     "==": "OEQ",
     "!=": "OIQ",
-    ">": "OGT",
+    ">" : "OGT",
     ">=": "OGE",
-    "<": "OLT",
+    "<" : "OLT",
     "<=": "OLE"
+}
+
+const unaryOperations: { [key: string]: string } = {
+    "~": "ONOT",
+    "!" : "NOT",
 }
 
 let MATH_OPERATIONS = "";
 
 // generate operation opcodes
-for (let operation of Object.keys(operations)) {
-    /*
-        const nums=vm.${identifiers._LOADX}(2);
-    vm._STORE(nums[1]${operation}nums[0])
-    */
+for (let operation of structuredClone( Object.keys(binaryOperations)).concat( Object.keys(unaryOperations))) {
     MATH_OPERATIONS += `
-set ${OPCODE_KEYS[ORIGINAL_OPCODES[operations[operation]]]}(_) {
-    vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);
+set ${OPCODE_KEYS[ORIGINAL_OPCODES[binaryOperations[operation]]]}(_) {
+    ${
+        Object.keys(unaryOperations).includes(operation) ? `vm.${identifiers.OPERATE}([_,a => ${operation}a]);` : `vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);`
+    }
 }, | - SPLIT >
     `
 }
@@ -455,7 +470,7 @@ const vm = {
 
 export default {
     vmCode,
-    operations,
+    operations: binaryOperations,
     minify,
     getInstruction
 }
