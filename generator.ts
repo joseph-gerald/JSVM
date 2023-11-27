@@ -35,40 +35,28 @@ export const transform = async (code: string) => {
         handled.push(node.loc);
     }
 
-    const handleKeys = (node: types.MemberExpression) => {
+    const handleKeys = (node: types.MemberExpression, addInsn = false) => {
         let keys: string[] = [];
 
+        for (let object of [node.property, node.object]) {
+            if (types.isMemberExpression(object)) {
+                keys.push(...handleKeys(object, addInsn))
+                setHandled(object);
+            }
 
-        if (types.isMemberExpression(node.object)) {
-            keys.push(...handleKeys(node.object))
-            setHandled(node.object);
-        }
+            if (types.isIdentifier(object)) {
+                keys.push(object.name);
+                setHandled(object);
+                if(addInsn) {
+                    node.computed && object == node.property ? addInstruction("READ_REGISTRY", '"' + object.name + '"') : addInstruction("STORE", '"' + object.name + '"');
+                }
+            }
 
-        if (types.isIdentifier(node.object)) {
-            keys.push(node.object.name);
-            setHandled(node.object);
-        }
-
-        if (types.isThisExpression(node.object)) {
-            keys.push("this")
-            setHandled(node.object);
-        }
-
-        // property
-
-        if (types.isIdentifier(node.property)) {
-            keys.push(node.property.name);
-            setHandled(node.property);
-        }
-
-        if (types.isStringLiteral(node.property)) {
-            keys.push(node.property.value);
-            setHandled(node.property);
-        }
-
-        if (types.isThisExpression(node.property)) {
-            keys.push("this")
-            setHandled(node.property);
+            if (types.isThisExpression(object)) {
+                keys.push("this")
+                setHandled(object);
+                if(addInsn) addInstruction("STORE", "this");
+            }
         }
 
         return keys;
@@ -89,8 +77,8 @@ export const transform = async (code: string) => {
 
         handleNode(node)
 
-        if(types.isUpdateExpression(node) && types.isIdentifier(node.argument))
-            addInstruction("READ_REGISTRY",JSON.stringify([node.argument.name]))
+        if (types.isUpdateExpression(node) && types.isIdentifier(node.argument))
+            addInstruction("READ_REGISTRY", JSON.stringify([node.argument.name]))
     }
 
     const handleNode = (node: types.Node) => {
@@ -108,8 +96,8 @@ export const transform = async (code: string) => {
 
             // Declerations
             case "FunctionDeclaration":
-                if(!types.isFunctionDeclaration(node)) return;
-                if(!types.isBlockStatement(node.body)) return;
+                if (!types.isFunctionDeclaration(node)) return;
+                if (!types.isBlockStatement(node.body)) return;
 
                 var start = string_utils.get_jump_address();
                 var end = string_utils.get_jump_address();
@@ -129,10 +117,10 @@ export const transform = async (code: string) => {
                 addInstruction("JUMP", '"' + end + '"')
                 addInstruction("LABEL", '"' + start + '"')
 
-                context = [id?.name,start]
+                context = [id?.name, start]
 
                 for (const param of params.reverse()) { // reversed because first in first out
-                    if(!types.isIdentifier(param)) continue;
+                    if (!types.isIdentifier(param)) continue;
                     addInstruction("STORE", JSON.stringify(context.concat(param.name)));
                     addInstruction("REGISTER");
                     setHandled(param);
@@ -140,7 +128,7 @@ export const transform = async (code: string) => {
 
 
                 handleNode(body);
-                
+
                 context = [];
 
                 addInstruction("RETURN")
@@ -167,8 +155,7 @@ export const transform = async (code: string) => {
                     types.isIdentifier(node.init) ||
                     types.isBinaryExpression(node.init) ||
                     types.isObjectExpression(node.init) ||
-                    types.isCallExpression(node.init))
-                {
+                    types.isCallExpression(node.init)) {
                     handleNode(node.init)
                 }
 
@@ -222,12 +209,14 @@ export const transform = async (code: string) => {
 
                 handling_call_expression--;
                 addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", [args.length])
-                store_invokes = Math.max(store_invokes,0);
+                store_invokes = Math.max(store_invokes, 0);
                 break;
             case "MemberExpression":
                 if (!types.isMemberExpression(node)) return;
 
-                addInstruction("GET", JSON.stringify(handleKeys(node)));
+                handleNode
+
+                addInstruction("GET", handleKeys(node, true).length);
                 break;
             case "BinaryExpression":
                 if (!types.isBinaryExpression(node)) return;
@@ -246,14 +235,14 @@ export const transform = async (code: string) => {
 
                 switch (node.operator) {
                     case "=":
-                        if(types.isIdentifier(node.left)) {
+                        if (types.isIdentifier(node.left)) {
                             setHandled(node.left);
                             handleValue(node.right)
                             addInstruction("STORE", '"' + node.left.name + '"');
                             addInstruction("REGISTER");
                         }
 
-                        if(types.isMemberExpression(node.left)) {
+                        if (types.isMemberExpression(node.left)) {
                             setHandled(node.left);
                             addInstruction("STORE", JSON.stringify(handleKeys(node.left)));
                             handleValue(node.right)
@@ -263,19 +252,19 @@ export const transform = async (code: string) => {
                     default:
                         const operation = node.operator.charAt(0);
 
-                        if(types.isIdentifier(node.left)) {
+                        if (types.isIdentifier(node.left)) {
                             setHandled(node.left);
-                            
+
                             addInstruction("READ_REGISTRY", '"' + node.left.name + '"')
                             handleValue(node.right)
 
                             addInstruction(code_utils.operations[operation])
-                            
+
                             addInstruction("STORE", '"' + node.left.name + '"');
                             addInstruction("REGISTER");
                         }
 
-                        if(types.isMemberExpression(node.left)) {
+                        if (types.isMemberExpression(node.left)) {
                             setHandled(node.left);
                             addInstruction("STORE", JSON.stringify(handleKeys(node.left)));
                             handleValue(node.right)
@@ -295,13 +284,13 @@ export const transform = async (code: string) => {
                 addInstruction("REGISTER")
                 break;
             case "ObjectExpression":
-                if(!types.isObjectExpression(node)) return;
+                if (!types.isObjectExpression(node)) return;
 
                 for (const prop of node.properties) {
-                    
+
                 }
                 break;
-            
+
 
             // Literals
             case "StringLiteral":
@@ -321,8 +310,8 @@ export const transform = async (code: string) => {
                 handleNode(node.expression);
                 break;
             case "ReturnStatement":
-                if(!types.isReturnStatement(node)) return;
-                if(node.argument) {
+                if (!types.isReturnStatement(node)) return;
+                if (node.argument) {
                     const prev = store_invokes;
                     store_invokes++;
                     handleNode(node.argument)
@@ -394,7 +383,7 @@ export const transform = async (code: string) => {
                     handleNode(node.test);
                 }
 
-                addInstruction("STORE",1);
+                addInstruction("STORE", 1);
                 addInstruction("OSUB");
 
                 addInstruction("CJUMP", '"' + loopStart + '"')
@@ -427,7 +416,7 @@ export const transform = async (code: string) => {
 
     const scoped = false;
 
-    if(scoped) {
+    if (scoped) {
         output = `(() => {
             ${output}
         })();`
@@ -445,7 +434,7 @@ export const transform = async (code: string) => {
     output = splitted.join("");
 
     console.log(bytecode)
-    
+
     fs.writeFileSync("output/vm.js", beautify(vm));
     fs.writeFileSync("output/bytecode.js", beautify(bytecode));
 

@@ -87,7 +87,7 @@ const vm = {
         vm._DUP();
     },
     set GET(E) {
-        vm._GET(vm.SHIFTER(E));
+        vm._GET(vm._LOADX(vm.SHIFTER(E)));
     },
     set STORE(E) {
         vm._STORE(vm.SHIFTER(E));

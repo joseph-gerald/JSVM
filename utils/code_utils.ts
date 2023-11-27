@@ -307,7 +307,7 @@ get ${OPCODE_KEYS[ORIGINAL_OPCODES.DUP]}() {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.GET]}(_) { 
-    vm.${identifiers._GET}(vm.${identifiers.SHIFTER}(_));
+    vm.${identifiers._GET}(vm.${identifiers._LOADX}(vm.${identifiers.SHIFTER}(_)));
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.STORE]}(_) { 

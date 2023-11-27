@@ -87,7 +87,7 @@ const vm = {
         vm._DUP();
     },
     set GET(E) {
-        vm._GET(vm.SHIFTER(E));
+        vm._GET(vm._LOADX(vm.SHIFTER(E)));
     },
     set STORE(E) {
         vm._STORE(vm.SHIFTER(E));
@@ -216,4 +216,4 @@ const vm = {
     EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
 };
 
-vm.EXECUTE([ [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "prop" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.GET, [ "console", "prop" ] ], [ vm.OPCODES.STORE, "BRUH" ], [ vm.OPCODES.INVOKE, 1 ] ]);
+vm.EXECUTE([ [ vm.OPCODES.STORE, "log" ], [ vm.OPCODES.STORE, "prop" ], [ vm.OPCODES.REGISTER ], [ vm.OPCODES.READ_REGISTRY, "prop" ], [ vm.OPCODES.STORE, "console" ], [ vm.OPCODES.GET, 2 ], [ vm.OPCODES.STORE, "BRUH" ], [ vm.OPCODES.INVOKE, 1 ] ]);
