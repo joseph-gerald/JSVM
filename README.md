@@ -6,7 +6,7 @@ JavaScript virtual machine
 - [x] Binary Expressions
 - [x] Control Flow
 - [x] Variables
-- [ ] Functions
+- [x] Functions
 - [ ] Objects
 - [ ] Errors
 
