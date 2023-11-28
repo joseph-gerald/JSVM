@@ -13,21 +13,31 @@ function shuffleArray(array: any) {
     return array;
 }
 
+function shuffleDict(dict: {}) {
+    let arr = Object.entries(dict);
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return Object.fromEntries(arr);
+}
+
 export default {
     shuffleArray,
-    calculateChecksum: function(string: string) {
+    shuffleDict,
+    calculateChecksum: function (string: string) {
         var src = string.toString();
         var checksum = 0;
-    
+
         for (var i = 0; i < src.length; i++) {
             var charCode = src.charCodeAt(i);
-    
+
             if (charCode != 32) {
                 var result = charCode ^ 24;
                 checksum += result;
             }
         }
-    
+
         return checksum;
     },
     make_hex_string_no_num: function (length: number) {
@@ -160,7 +170,7 @@ export default {
         //return this.make_large_string(Date.now() % 1000000, 5).slice(1)
         //return this.make_circle_string(jumpCount++, 5)
         //return this.getMangledAt(jumpCount++)
-        return this.make_hexadecimal_string(1+jumpCount++, 5).slice(1)
+        return this.make_hexadecimal_string(1 + jumpCount++, 5).slice(1)
     },
     make_money_string: function (index: number, length: number) {
         const characters = shuffleArray(["$", "_", "v", "V"]);

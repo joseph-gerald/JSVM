@@ -1,227 +1,231 @@
 /* JOVM */
 const vm = {
-    OPCODES: {
-        DEBUG: 0,
-        STORE: 1,
-        DUP: 2,
-        DEL: 3,
-        LOAD: 4,
-        GOTO: 5,
-        GET: 6,
-        LABEL: 7,
-        RETURN: 8,
-        VISIT: 9,
-        CJUMP: 10,
-        JUMP: 11,
-        INVOKE: 12,
-        SINVOKE: 13,
-        ASSIGN: 14,
-        OADD: 15,
-        OSUB: 16,
-        OMUL: 17,
-        ODIV: 18,
-        OEXP: 19,
-        OMOD: 20,
-        OXOR: 21,
-        OBOR: 22,
-        OAND: 23,
-        ONOT: 24,
-        REGISTER: 25,
-        READ_REGISTRY: 26,
-        OR: 27,
-        NOT: 28,
-        AND: 29,
-        OEQ: 30,
-        OIQ: 31,
-        OGT: 32,
-        OGE: 33,
-        OLT: 34,
-        OLE: 35
+    _: 0,
+    t: {
+        o: 33,
+        g: 34,
+        l: 35,
+        D: 36,
+        i: 37,
+        C: 38,
+        A: 39,
+        k: 40,
+        O: 41,
+        X: 42,
+        N: 43
     },
-    OP_INDEX: 0,
-    OPERATIONS: [],
-    CPOOL: [],
-    STACK: [],
-    REGISTRY: [],
-    LABELS: [],
-    VISITS: [],
-    GETTHIS: this,
-    OBJECT: Object,
-    OBJECT_CLONER: E => structuredClone(E),
-    HASH: E => btoa(btoa(btoa(E))).split("").map((E => E.charCodeAt())).reduce(((E, O) => (O ^ E / O | O & O | E << (E.length | E << O | 1e-5) << (E.length | 41 * E.length) << E * E) + "" + E)).slice(6, 26),
-    CINSERT: E => vm.UNSHIFTER([vm.CPOOL, E]),
-    SINSERT: E => vm.UNSHIFTER([vm.STACK, E]),
-    LINSERT: E => vm.UNSHIFTER([vm.LABELS, E]),
-    VINSERT: E => vm.UNSHIFTER([vm.VISITS, E]),
-    _LOAD: E => vm.SHIFTER(vm.CPOOL),
-    _LOADX: E => ($ = vm.CPOOL.slice(0, E), vm.CPOOL = vm.CPOOL.slice(E, vm.CPOOL.length),
-        $),
-    _SLOAD: E => vm.SHIFTER(vm.STACK),
-    _DIG: E => vm.SHIFTER(E).reduce(((E = vm.SHIFTER(O), O) => E[O]), vm.SHIFTER(E)),
-    _DUP: E => vm.CINSERT(vm.CPOOL[0]),
-    _SDUP: E => vm.SINSERT(vm.STACK[0]),
-    _STORE: E => vm.CINSERT(E),
-    _GET: E => vm.SINSERT(vm._DIG([E, vm.GETTHIS, vm.GETTHIS]) ?? vm._DIG([E.map((E => vm.HASH(E))), vm.REGISTRY, vm.REGISTRY])),
-    _INVOKE_JUMP: E => vm._VISIT([vm.OP_INDEX, E.shift()]),
-    _INVOKE_GLOBAL: E => vm.APPLIER([E.shift(), E, vm._LOADX(E.shift()).reverse()]),
-    _INVOKE_MATCH: E => ["string"].includes(typeof E[0]) ? vm._INVOKE_JUMP(E) : vm._INVOKE_GLOBAL(E),
-    _INVOKE: E => vm._INVOKE_MATCH([vm._SLOAD(), E]),
-    _REGISTER: E => vm.REGISTRY[vm.HASH(vm._LOAD())] = vm._LOAD(),
-    _READ_REGISTRY: E => vm._STORE(vm.REGISTRY[vm.HASH(E)] ?? vm._DIG([E, vm.GETTHIS, vm.GETTHIS])),
-    _CREATE_LABEL: E => vm.LINSERT(E),
-    _FIND_LABEL: E => vm.LABELS[vm.LABELS.map((E => E[0])).indexOf(E)][1],
-    _ASSIGN: E => {
-        let O = vm.GETTHIS;
-        for (let S = 0; S < E[1].length - 1; S++) O = O[E[1][S]];
-        O[E[1][E[1].length - 1]] = E[0];
+    R: _ => vm.T([vm.I, _]),
+    M: _ => vm.V(vm.Z),
+    set q(_) {
+        vm.u([_, (_, e) => _ ** e])
     },
-    _JUMP_OPERATION: E => vm.OP_INDEX = E,
-    _RETURN_VISITOR: E => vm._JUMP_OPERATION(vm.SHIFTER(vm.VISITS)),
-    _VISIT: E => (vm.VINSERT(E.shift()), vm._JUMP_OPERATION(vm._FIND_LABEL(E.shift()))),
-    _JUMP: E => vm._JUMP_OPERATION(vm._FIND_LABEL(E)),
-    get OPCODE_KEYS() {
-        return vm.APPLIER([vm.OBJECT.keys, vm, [vm.OPCODES]]);
+    H: {
+        L: 11,
+        j: 12,
+        m: 13,
+        p: 14,
+        B: 15,
+        U: 16,
+        h: 17,
+        G: 18,
+        P: 19,
+        W: 20,
+        Y: 21
     },
-    get LOAD() {
-        return vm._LOAD();
+    set v(_) {
+        vm.S(vm.F(vm.V(_)))
     },
-    get DUP() {
-        vm._DUP();
+    set K(_) {
+        vm.u([_, (_, e) => _ || e])
     },
-    set GET(E) {
-        vm._GET(vm._LOADX(vm.SHIFTER(E)));
+    J: this,
+    $: _ => vm.__(_),
+    set e_(_) {
+        vm.t_(vm.V(_))
     },
-    set STORE(E) {
-        vm._STORE(vm.SHIFTER(E));
+    set p(_) {
+        vm.u([_, (_, e) => _ != e])
     },
-    set INVOKE(E) {
-        vm._INVOKE(vm.SHIFTER(E));
+    F: _ => ($ = vm.Z.slice(0, _), vm.Z = vm.Z.slice(_, vm.Z.length), $),
+    set j(_) {
+        vm.s_(vm.V(_))
     },
-    set SINVOKE(E) {
-        vm._SDUP(), "string" == typeof vm._SLOAD() ? vm._INVOKE(vm.SHIFTER(E)) : vm._STORE(vm._INVOKE(vm.SHIFTER(E)));
+    set o_(_) {
+        vm.u([_, _ => ~_])
     },
-    set REGISTER(E) {
-        vm._REGISTER(vm.SHIFTER(E));
+    g_: _ => structuredClone(_),
+    set l_(_) {
+        vm.M() || vm.n_(_[0])
     },
-    set READ_REGISTRY(E) {
-        vm._READ_REGISTRY(vm.SHIFTER(E));
+    set a_(_) {
+        vm.u([_, (_, e) => _ >= e])
     },
-    set LABEL(E) {
-        vm._CREATE_LABEL;
+    Z: [],
+    r_: [],
+    set c_(_) {
+        vm.y_(vm.V(_))
     },
-    set JUMP(E) {
-        vm._JUMP(vm.SHIFTER(E));
+    D_: [],
+    get x_() {
+        return vm.i_([vm.C_.keys, vm, [vm.E_]])
     },
-    set CJUMP(E) {
-        vm._LOAD() || vm._JUMP(E[0]);
+    set U(_) {
+        vm.u([_, (_, e) => _ / e])
     },
-    set RETURN(E) {
-        vm._RETURN_VISITOR(E);
+    set D(_) {
+        vm.u([_, (_, e) => e > _])
     },
-    set ASSIGN(E) {
-        vm._ASSIGN(vm._LOADX(2));
+    y_: _ => vm.r_[vm.A_(vm.M())] = vm.M(),
+    k_: _ => {
+        let e = vm.J;
+        for (let t = 0; t < _[1].length - 1; t++) e = e[_[1][t]];
+        e[_[1][_[1].length - 1]] = _[0]
     },
-    OPERATE: E => vm._STORE(vm._LOADX(2).reverse(vm.SHIFTER(E)).reduce(vm.SHIFTER(E))),
-    set OADD(E) {
-        vm.OPERATE([E, (E, O) => E + O]);
+    O_: _ => vm.V(_) == vm.E_.X ? vm.$([vm.V(_), vm._]) : _,
+    f_: _ => vm.i_([vm.g_, _, [vm.X_[vm._++]]]),
+    N_: (_, e) => vm[vm.x_[_]] = e,
+    R_: _ => vm.T([vm.Z, _]),
+    set G(_) {
+        vm.T_(), "string" == typeof vm.d_() ? vm.t_(vm.V(_)) : vm.I_(vm.t_(vm.V(_)))
     },
-    set OSUB(E) {
-        vm.OPERATE([E, (E, O) => E - O]);
+    s_: _ => vm.I_(vm.r_[vm.A_(_)] ?? vm.M_([_, vm.J, vm.J])),
+    set m(_) {
+        vm.V_(_)
     },
-    set OMUL(E) {
-        vm.OPERATE([E, (E, O) => E * O]);
+    Z_: {
+        o_: 0,
+        b_: 1,
+        q_: 2,
+        u_: 3,
+        H_: 4,
+        L_: 5,
+        j_: 6,
+        m_: 7,
+        q: 8,
+        p_: 9,
+        B_: 10
     },
-    set ODIV(E) {
-        vm.OPERATE([E, (E, O) => E / O]);
+    Q_: _ => vm.U_[vm.U_.map((_ => _[0])).indexOf(_)][1],
+    set A(_) {
+        vm.u([_, (_, e) => _ == e])
     },
-    set OXOR(E) {
-        vm.OPERATE([E, (E, O) => E ^ O]);
+    set h_(_) {
+        vm.u([_, (_, e) => _ > e])
     },
-    set OBOR(E) {
-        vm.OPERATE([E, (E, O) => E | O]);
+    V_: _ => vm.w_(vm.V(vm.D_)),
+    G_: _ => (vm.P_(_.shift()), vm.w_(vm.Q_(_.shift()))),
+    set W_(_) {
+        vm.I_(vm.V(_))
     },
-    set OAND(E) {
-        vm.OPERATE([E, (E, O) => E & O]);
-    },
-    set OMOD(E) {
-        vm.OPERATE([E, (E, O) => E % O]);
-    },
-    set OEXP(E) {
-        vm.OPERATE([E, (E, O) => E ** O]);
-    },
-    set AND(E) {
-        vm.OPERATE([E, (E, O) => E && O]);
-    },
-    set OR(E) {
-        vm.OPERATE([E, (E, O) => E || O]);
-    },
-    set OEQ(E) {
-        vm.OPERATE([E, (E, O) => E == O]);
-    },
-    set OIQ(E) {
-        vm.OPERATE([E, (E, O) => E != O]);
-    },
-    set OGT(E) {
-        vm.OPERATE([E, (E, O) => E > O]);
-    },
-    set OGE(E) {
-        vm.OPERATE([E, (E, O) => E >= O]);
-    },
-    set OLT(E) {
-        vm.OPERATE([E, (E, O) => O > E]);
-    },
-    set OLE(E) {
-        vm.OPERATE([E, (E, O) => O >= E]);
-    },
-    set undefined(E) {
-        vm.OPERATE([E, E => ~E]);
-    },
-    set undefined(E) {
-        vm.OPERATE([E, E => !E]);
-    },
-    SHIFTER: E => E.shift(),
-    UNSHIFTER: E => vm.SHIFTER(E).unshift(vm.SHIFTER(E)),
-    APPLIER: E => vm.SHIFTER(E).apply(vm.SHIFTER(E), vm.SHIFTER(E)),
-    STORE_LABEL: E => vm.SHIFTER(E) == vm.OPCODES.LABEL ? vm._CREATE_LABEL([vm.SHIFTER(E), vm.OP_INDEX]) : E,
-    GET_NEXT_INSTRUCTION: E => vm.APPLIER([vm.OBJECT_CLONER, E, [vm.OPERATIONS[vm.OP_INDEX++]]]),
-    EXECUTE_INSN: (E, O) => vm[vm.OPCODE_KEYS[E]] = O,
-    EXECUTOR_ARGS: E => [vm.SHIFTER(E), E],
-    INSN_EXECUTOR: E => vm.APPLIER([vm.EXECUTE_INSN, E, vm.EXECUTOR_ARGS(E)]),
-    set DEBUG(E) {
-        const O = vm.OP_INDEX,
-            S = structuredClone(vm.OPERATIONS[O - 1]);
-        console.warn("===========    DEBUG    ==========="), console.warn("DEBUG OCCURED ON INDEX: " + O),
-            console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES),
-            console.error("Constants:", vm.CPOOL), console.error("Obj Stack:", vm.STACK), console.error("Registery:", vm.REGISTRY),
-            console.error("Visitors :", vm.VISITS), console.warn("=========== INSTRUCTION ==========="),
-            console.error("Operation: " + vm.OPCODE_KEYS[S.shift()]), console.error("Arguments: " + JSON.stringify(S));
-    },
-    EXECUTE_PROXY: E => {
-        const O = vm.OBJECT_CLONER(E);
-        for (; vm.OP_INDEX < vm.OPERATIONS.length;) vm.STORE_LABEL(vm.GET_NEXT_INSTRUCTION());
-        for (vm.OP_INDEX = 0; vm.OP_INDEX < vm.OPERATIONS.length;) {
-            const E = [vm.CPOOL, vm.STACK, vm.REGISTRY, vm.VISITS].map((E => {
-                    try {
-                        return vm.OBJECT_CLONER(E);
-                    } catch (E) {
-                        return ["error"];
-                    }
-                })),
-                S = vm.OP_INDEX;
-            try {
-                vm.INSN_EXECUTOR(vm.GET_NEXT_INSTRUCTION());
-            } catch (T) {
-                const R = vm.OPERATIONS[S];
-                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + S),
-                    console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", vm.OPCODES),
-                    console.error("EXECUTION QUEUE:", O), console.error("Constants:", E[0]), console.error("Obj Stack:", E[1]),
-                    console.error("Registery:", E[2]), console.error("Visitors :", E[3]), console.warn("=========== INSTRUCTION ==========="),
-                    console.error("Operation: " + vm.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R)),
-                    console.warn("=========== STACK TRACE ==========="), console.warn("Original:"),
-                    console.error(T), console.warn("Attemping to recreate..."), vm.CPOOL = E[0], vm.STACK = E[1],
-                    vm.REGISTRY = E[2], vm.VISITS = E[3], void vm.INSN_EXECUTOR(vm.OPCODES[S]);
-            }
+    i_: _ => vm.V(_).apply(vm.V(_), vm.V(_)),
+    get E_() {
+        return {
+            ...vm.Z_,
+            ...vm.H,
+            ...vm.Y_,
+            ...vm.t,
+            ...vm.v_
         }
     },
-    EXECUTE: E => vm.EXECUTE_PROXY(vm.OPERATIONS = E)
+    set h(_) {
+        vm.u([_, (_, e) => _ * e])
+    },
+    S_: _ => vm.i_([vm.N_, _, vm.z_(_)]),
+    U_: [],
+    Y_: {
+        F_: 22,
+        K_: 23,
+        v: 24,
+        J_: 25,
+        _e: 26,
+        ee: 27,
+        W_: 28,
+        te: 29,
+        se: 30,
+        oe: 31,
+        c_: 32
+    },
+    C_: Object,
+    z_: _ => [vm.V(_), _],
+    T_: _ => vm.R(vm.I[0]),
+    ge: _ => ["string"].includes(typeof _[0]) ? vm.le(_) : vm.ne(_),
+    le: _ => vm.G_([vm._, _.shift()]),
+    ne: _ => vm.i_([_.shift(), _, vm.F(_.shift()).reverse()]),
+    set ae(_) {
+        vm.n_(vm.V(_))
+    },
+    set re(_) {
+        vm.u([_, (_, e) => _ % e])
+    },
+    set W(_) {
+        vm.u([_, _ => !_])
+    },
+    get H_() {
+        return vm.M()
+    },
+    set N(_) {
+        vm.k_(vm.F(2))
+    },
+    set X(_) {
+        vm.$
+    },
+    set L(_) {
+        vm.u([_, (_, e) => _ & e])
+    },
+    ce: _ => vm.ye(vm.X_ = _),
+    M_: _ => vm.V(_).reduce(((_ = vm.V(e), e) => _[e]), vm.V(_)),
+    De: _ => vm.R_(vm.Z[0]),
+    set J_(_) {
+        vm.u([_, (_, e) => _ ^ e])
+    },
+    set p_(_) {
+        vm.u([_, (_, e) => _ && e])
+    },
+    d_: _ => vm.V(vm.I),
+    t_: _ => vm.ge([vm.d_(), _]),
+    set te(_) {
+        vm.u([_, (_, e) => e >= _])
+    },
+    I_: _ => vm.R_(_),
+    get _e() {
+        vm.De()
+    },
+    set i(_) {
+        vm.u([_, (_, e) => _ - e])
+    },
+    u: _ => vm.I_(vm.F(2).reverse(vm.V(_)).reduce(vm.V(_))),
+    set ee(_) {
+        vm.u([_, (_, e) => _ + e])
+    },
+    A_: _ => btoa(btoa(btoa(_))).split("").map((_ => _.charCodeAt())).reduce(((_, e) => (e ^ _ / e | e & e | _ << (_.length | _ << e | 1e-5) << (_.length | 41 * _.length) << _ * _) + "" + _)).slice(6, 26),
+    T: _ => vm.V(_).unshift(vm.V(_)),
+    __: _ => vm.T([vm.U_, _]),
+    n_: _ => vm.w_(vm.Q_(_)),
+    set xe(_) {
+        vm.u([_, (_, e) => _ | e])
+    },
+    ye: _ => {
+        for (vm.g_(_); vm._ < vm.X_.length;) vm.O_(vm.f_());
+        for (vm._ = 0; vm._ < vm.X_.length;) vm.S_(vm.f_())
+    },
+    v_: {
+        l_: 44,
+        h_: 45,
+        K: 46,
+        xe: 47,
+        ie: 48,
+        Ce: 49,
+        Ee: 50,
+        e_: 51,
+        re: 52,
+        Ae: 53,
+        ae: 54,
+        a_: 55
+    },
+    V: _ => _.shift(),
+    w_: _ => vm._ = _,
+    P_: _ => vm.T([vm.D_, _]),
+    S: _ => vm.R(vm.M_([_, vm.J, vm.J]) ?? vm.M_([_.map((_ => vm.A_(_))), vm.r_, vm.r_])),
+    I: [],
+    X_: []
 };

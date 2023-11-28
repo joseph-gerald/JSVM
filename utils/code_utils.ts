@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = false; // false for debug
+const shuffle = true; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -98,8 +98,10 @@ const OPCODE_ARRAY = [
     "OLE",  // Operation: Less / Equal
 ]
 
-if(shuffle) {
-    for (let i = 0; i < 100; i++) {
+const dead_instructions = 20;
+
+if (shuffle) {
+    for (let i = 0; i < dead_instructions; i++) {
         OPCODE_ARRAY.push(btoa(Math.random().toString(16)).split("=").join(""))
     }
 }
@@ -114,6 +116,7 @@ if (shuffle) {
     for (const opcode_id of opcodes_ids) {
         ORIGINAL_OPCODES[opcode_id] = Object.keys(ORIGINAL_OPCODES).length;
     }
+    // ORIGINAL_OPCODES = string_utils.shuffleDict(ORIGINAL_OPCODES); // won't work with current index based instruction handler
 }
 
 //console.log(ORIGINAL_OPCODES)
@@ -232,35 +235,92 @@ const binaryOperations: { [key: string]: string } = {
     "||": "OR",
     "==": "OEQ",
     "!=": "OIQ",
-    ">" : "OGT",
+    ">": "OGT",
     ">=": "OGE",
-    "<" : "OLT",
+    "<": "OLT",
     "<=": "OLE"
 }
 
 const unaryOperations: { [key: string]: string } = {
     "~": "ONOT",
-    "!" : "NOT",
+    "!": "NOT",
 }
 
 let MATH_OPERATIONS = "";
 
 // generate operation opcodes
-for (let operation of structuredClone( Object.keys(binaryOperations)).concat( Object.keys(unaryOperations))) {
+for (let operation of structuredClone(Object.keys(binaryOperations)).concat(Object.keys(unaryOperations))) {
+    const isUnary = Object.keys(unaryOperations).includes(operation);
     MATH_OPERATIONS += `
-set ${OPCODE_KEYS[ORIGINAL_OPCODES[binaryOperations[operation]]]}(_) {
-    ${
-        Object.keys(unaryOperations).includes(operation) ? `vm.${identifiers.OPERATE}([_,a => ${operation}a]);` : `vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);`
-    }
+set ${OPCODE_KEYS[ORIGINAL_OPCODES[isUnary ? unaryOperations[operation] : binaryOperations[operation]]]}(_) {
+    ${isUnary ? `vm.${identifiers.OPERATE}([_,a => ${operation}a]);` : `vm.${identifiers.OPERATE}([_,(a, b) => a ${operation} b]);`
+        }
 }, | - SPLIT >
     `
 }
 
 //console.log(MATH_OPERATIONS)
 
+function splitObject(obj: any, chunkLength: number): any[] {
+    let keys = Object.keys(obj);
+
+    function chunkArray(array: any[], chunkSize: number): any[] {
+        return Array.from(
+            { length: Math.ceil(array.length / chunkSize) },
+            (_, i) => array.slice(i * chunkSize, i * chunkSize + chunkSize)
+        );
+    }
+
+    let chunks = chunkArray(keys, chunkLength);
+
+    let result = chunks.map((chunk: any[]) => {
+        let newObj: any = {};
+        chunk.forEach((key: any) => {
+            newObj[key] = obj[key];
+        });
+        return newObj;
+    });
+
+    return result;
+}
+
+const chunkCount = 5;
+const chunkSize = Object.keys(OPCODES).length/chunkCount;
+const split_opcodes = splitObject(OPCODES, chunkSize);
+const chunk_identifiers: string[] = [];
+
+for (let _ of split_opcodes) {
+    chunk_identifiers.push(string_utils.make_large_string(Date.now(), 10));
+}
+
+let chunksAsString = "";
+
+let chunkIndex = 0;
+for (let chunk of split_opcodes) {
+    chunksAsString += `
+${chunk_identifiers[chunkIndex]}: ${JSON.stringify(chunk)}, | - SPLIT >
+    `
+    chunkIndex++;
+}
+
 let vmBody = `
 /*@__MANGLE_PROP__*/
-${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1, -1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ " + _).join(",")}}, | - SPLIT >
+
+${!shuffle ? `${identifiers.OPCODES}: {${JSON.stringify(OPCODES).slice(1, -1).split(",").map(_ => "/*@__MANGLE_PROP__*/ /*@__KEY__*/ " + _).join(",")}}, | - SPLIT >` :
+        (
+            `
+get ${identifiers.OPCODES}() {
+    return {
+${
+    "..." + chunk_identifiers.map(_ => "vm."+_).join(",...")
+}
+}}, | - SPLIT >
+${
+    chunksAsString   
+}
+`
+        )
+    }
 
 ${identifiers.OP_INDEX}: 0, // index of operation | - SPLIT >
 ${identifiers.OPERATIONS}: [], // operations | - SPLIT >
@@ -470,7 +530,7 @@ const vm = {
 
 export default {
     vmCode,
-    operations: binaryOperations,
+    operations: {...binaryOperations, ...unaryOperations},
     minify,
     getInstruction
 }
