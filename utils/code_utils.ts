@@ -8,7 +8,7 @@ const shuffle = true; // false for debug
 const mangleSettings: MangleOptions = {
     eval: true,
     properties: shuffle,
-    reserved: ["vm"],
+    reserved: [""],
 
 };
 
@@ -133,15 +133,18 @@ if (shuffle) {
 const OPCODE_KEYS = Object.keys(OPCODES);
 
 const identifiers: { [key: string]: any } = {
-    VM: "_", 
+    VM: "VM", 
 
     OPCODE_KEYS: "OPCODE_KEYS",
     OPCODES: "OPCODES",
-    HASH: "HASH",
 
     CPOOL: "CPOOL",
     STACK: "STACK",
     REGISTRY: "REGISTRY",
+
+    HASH: "HASH",
+    HASH_REDUCER: "HASH_REDUCER",
+    HASH_MAPPER: "HASH_MAPPER",
 
     CINSERT: "CINSERT",
     SINSERT: "SINSERT",
@@ -201,7 +204,16 @@ const identifiers: { [key: string]: any } = {
     EXECUTE: "EXECUTE_PROXY",
     GET_NEXT_INSTRUCTION: "GET_NEXT_INSTRUCTION",
 
+    BTOA: "BTOA",
+    BTOA_PROXY: "BTOA_PROXY",
+    TRIPLE_BTOA: "TRIPLE_BTOA",
+    LENGTH_PROXY: "LENGTH_PROXY",
+    EMPTY_STRING: "EMPTY_STRING",
+    REVERSE_PROXY: "REVERSE_PROXY",
+    EQUALITY_PROXY: "EQUALITY_PROXY",
     OBJECT_CLONER: "OBJECT_CLONER",
+    TYPEOF_PROXY: "TYPEOF_PROXY",
+    MAPPER: "MAPPER",
     DEBUG: "DEBUG",
 }
 
@@ -333,11 +345,22 @@ ${identifiers.REGISTRY}: [], // variable registry | - SPLIT >
 ${identifiers.LABELS}: [], // label registry | - SPLIT >
 ${identifiers.VISITS}: [], // visit stack | - SPLIT >
 
+${identifiers.BTOA}: _ => btoa(_), | - SPLIT >
+${identifiers.BTOA_PROXY}: _ => ${identifiers.VM}.${identifiers.APPLIER}([${identifiers.VM}.${identifiers.BTOA},${identifiers.VM},[_]]), | - SPLIT >
+${identifiers.TRIPLE_BTOA}: _ => ${identifiers.VM}.${identifiers.BTOA_PROXY}(${identifiers.VM}.${identifiers.BTOA_PROXY}(${identifiers.VM}.${identifiers.BTOA_PROXY}(_))), | - SPLIT >
+${identifiers.EMPTY_STRING}: this.name, | - SPLIT >
 ${identifiers.GETTHIS}: this, | - SPLIT >
 ${identifiers.OBJECT}: Object, | - SPLIT >
 ${identifiers.OBJECT_CLONER}: _ => structuredClone(_), | - SPLIT >
+${identifiers.TYPEOF_PROXY}: _ => typeof _, | - SPLIT >
+${identifiers.EQUALITY_PROXY}: _ => ${identifiers.VM}.${identifiers.SHIFTER}(_) == ${identifiers.VM}.${identifiers.SHIFTER}(_), | - SPLIT >
+${identifiers.LENGTH_PROXY}: _ => _.length, | - SPLIT >
+${identifiers.MAPPER}: _ => ${identifiers.VM}.${identifiers.SHIFTER}(_).map(${identifiers.VM}.${identifiers.SHIFTER}(_)), | - SPLIT >
+${identifiers.REVERSE_PROXY}: _ => _.reverse(), | - SPLIT >
 
-${identifiers.HASH}: _ => btoa(btoa(btoa(_))).split('').map((_=>_.charCodeAt())).reduce(((_,$)=>($^_/$|$&$|_<<(_.length|_<<$|1e-5)<<(_.length|41*_.length)<<_*_)+''+_)).slice(6,26), | - SPLIT >
+${identifiers.HASH_MAPPER}: _ => _.map((_=>_.charCodeAt())),
+${identifiers.HASH_REDUCER}: _ => _.reduce(((_,$)=>($^_/$|$&$|_<<(${identifiers.VM}.${identifiers.LENGTH_PROXY}(_)|_<<$|1e-5)<<(${identifiers.VM}.${identifiers.LENGTH_PROXY}(_)|41*${identifiers.VM}.${identifiers.LENGTH_PROXY}(_))<<_*_)+${identifiers.VM}.${identifiers.EMPTY_STRING}+_)),
+${identifiers.HASH}: _ => ${identifiers.VM}.${identifiers.HASH_REDUCER}(${identifiers.VM}.${identifiers.HASH_MAPPER}(${identifiers.VM}.${identifiers.TRIPLE_BTOA}(_).split(${identifiers.VM}.${identifiers.EMPTY_STRING}))), | - SPLIT >
 
 ${identifiers.CINSERT}: _ => ${identifiers.VM}.${identifiers.UNSHIFTER}([${identifiers.VM}.${identifiers.CPOOL},_]), | - SPLIT >
 ${identifiers.SINSERT}: _ => ${identifiers.VM}.${identifiers.UNSHIFTER}([${identifiers.VM}.${identifiers.STACK},_]), | - SPLIT >
@@ -345,7 +368,7 @@ ${identifiers.LINSERT}: _ => ${identifiers.VM}.${identifiers.UNSHIFTER}([${ident
 ${identifiers.VINSERT}: _ => ${identifiers.VM}.${identifiers.UNSHIFTER}([${identifiers.VM}.${identifiers.VISITS},_]), | - SPLIT >
 
 ${identifiers._LOAD}: _ => ${identifiers.VM}.${identifiers.SHIFTER}(${identifiers.VM}.${identifiers.CPOOL}), | - SPLIT >
-${identifiers._LOADX}: _ => ($=${identifiers.VM}.${identifiers.CPOOL}.slice(0,_),${identifiers.VM}.${identifiers.CPOOL} = ${identifiers.VM}.${identifiers.CPOOL}.slice(_,${identifiers.VM}.${identifiers.CPOOL}.length),$), | - SPLIT >
+${identifiers._LOADX}: _ => ($=${identifiers.VM}.${identifiers.CPOOL}.slice(0,_),${identifiers.VM}.${identifiers.CPOOL} = ${identifiers.VM}.${identifiers.CPOOL}.slice(_,${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.CPOOL})),$), | - SPLIT >
 ${identifiers._SLOAD}: _ => ${identifiers.VM}.${identifiers.SHIFTER}(${identifiers.VM}.${identifiers.STACK}), | - SPLIT >
 
 ${identifiers._DIG}: _ => ${identifiers.VM}.${identifiers.SHIFTER}(_).reduce((($=${identifiers.VM}.${identifiers.SHIFTER}(_), _) => $[_]), ${identifiers.VM}.${identifiers.SHIFTER}(_)),
@@ -354,9 +377,9 @@ ${identifiers._SDUP}: _ => ${identifiers.VM}.${identifiers.SINSERT}(${identifier
 ${identifiers._STORE}: _ => ${identifiers.VM}.${identifiers.CINSERT}(_), | - SPLIT >
 ${identifiers._GET}: _ => ${identifiers.VM}.${identifiers.SINSERT}(${identifiers.VM}.${identifiers._DIG}([_,${identifiers.VM}.${identifiers.GETTHIS},${identifiers.VM}.${identifiers.GETTHIS}])??${identifiers.VM}.${identifiers._DIG}([_.map(_ => ${identifiers.VM}.${identifiers.HASH}(_)),${identifiers.VM}.${identifiers.REGISTRY},${identifiers.VM}.${identifiers.REGISTRY}])), | - SPLIT >
 
-${identifiers._INVOKE_JUMP}: _ => ${identifiers.VM}.${identifiers._VISIT}([${identifiers.VM}.${identifiers.OP_INDEX},_.shift()]), | - SPLIT >
-${identifiers._INVOKE_GLOBAL}: _ => ${identifiers.VM}.${identifiers.APPLIER}([_.shift(),_, ${identifiers.VM}.${identifiers._LOADX}(_.shift()).reverse()]), | - SPLIT >
-${identifiers._INVOKE_MATCH}: _ => [typeof ""].includes(typeof _[0]) ? ${identifiers.VM}.${identifiers._INVOKE_JUMP}(_) : ${identifiers.VM}.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
+${identifiers._INVOKE_JUMP}: _ => ${identifiers.VM}.${identifiers._VISIT}([${identifiers.VM}.${identifiers.OP_INDEX},${identifiers.VM}.${identifiers.SHIFTER}(_)]), | - SPLIT >
+${identifiers._INVOKE_GLOBAL}: _ => ${identifiers.VM}.${identifiers.APPLIER}([${identifiers.VM}.${identifiers.SHIFTER}(_),_, ${identifiers.VM}.${identifiers.REVERSE_PROXY}(${identifiers.VM}.${identifiers._LOADX}(${identifiers.VM}.${identifiers.SHIFTER}(_)))]), | - SPLIT >
+${identifiers._INVOKE_MATCH}: _ => ${identifiers.VM}.${identifiers.EQUALITY_PROXY}([${identifiers.VM}.${identifiers.TYPEOF_PROXY}(${identifiers.VM}.${identifiers.EMPTY_STRING}),${identifiers.VM}.${identifiers.TYPEOF_PROXY}(_[0])]) ? ${identifiers.VM}.${identifiers._INVOKE_JUMP}(_) : ${identifiers.VM}.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
 ${identifiers._INVOKE}: _ => ${identifiers.VM}.${identifiers._INVOKE_MATCH}([${identifiers.VM}.${identifiers._SLOAD}(),_]), | - SPLIT >
 ${identifiers._REGISTER}: _ => ${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(${identifiers.VM}.${identifiers._LOAD}())] = ${identifiers.VM}.${identifiers._LOAD}(), | - SPLIT >
 ${identifiers._READ_REGISTRY}: _ => ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(_)]??${identifiers.VM}.${identifiers._DIG}([_,${identifiers.VM}.${identifiers.GETTHIS},${identifiers.VM}.${identifiers.GETTHIS}])), | - SPLIT >
@@ -364,11 +387,11 @@ ${identifiers._READ_REGISTRY}: _ => ${identifiers.VM}.${identifiers._STORE}(${id
 ${identifiers._CREATE_LABEL}: _ => ${identifiers.VM}.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => ${identifiers.VM}.${identifiers.LABELS}[${identifiers.VM}.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
 
-${identifiers._ASSIGN}: _ => {let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < _[1].length - 1; $++) context = context[_[1][$]];context[_[1][_[1].length - 1]] = _[0]}, | - SPLIT >
+${identifiers._ASSIGN}: _ => {let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1; $++) context = context[_[1][$]];context[_[1][${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1]] = _[0]}, | - SPLIT >
 ${identifiers._JUMP_OPERATION}: _ => ${identifiers.VM}.${identifiers.OP_INDEX} = _, | - SPLIT >
 
 ${identifiers._RETURN_VISITOR}: _ => ${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers.SHIFTER}(${identifiers.VM}.${identifiers.VISITS})),
-${identifiers._VISIT}: _ => (${identifiers.VM}.${identifiers.VINSERT}(_.shift()),${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers._FIND_LABEL}(_.shift()))), | - SPLIT >
+${identifiers._VISIT}: _ => (${identifiers.VM}.${identifiers.VINSERT}(${identifiers.VM}.${identifiers.SHIFTER}(_)),${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers._FIND_LABEL}(${identifiers.VM}.${identifiers.SHIFTER}(_)))), | - SPLIT >
 ${identifiers._JUMP}: _ => ${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers._FIND_LABEL}(_)), | - SPLIT >
 
 get ${identifiers.OPCODE_KEYS}() {
@@ -396,7 +419,7 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.INVOKE]}(_) {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.SINVOKE]}(_) { 
-    if((${identifiers.VM}.${identifiers._SDUP}(),typeof "" == typeof ${identifiers.VM}.${identifiers._SLOAD}())) {
+    if((${identifiers.VM}.${identifiers._SDUP}(),${identifiers.VM}.${identifiers.TYPEOF_PROXY}(${identifiers.VM}.${identifiers.EMPTY_STRING}) == ${identifiers.VM}.${identifiers.TYPEOF_PROXY}(${identifiers.VM}.${identifiers._SLOAD}()))) {
         ${identifiers.VM}.${identifiers._INVOKE}(${identifiers.VM}.${identifiers.SHIFTER}(_));
     } else {
         ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers._INVOKE}(${identifiers.VM}.${identifiers.SHIFTER}(_)));
@@ -431,7 +454,7 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN]}(_) {
     ${identifiers.VM}.${identifiers._ASSIGN}(${identifiers.VM}.${identifiers._LOADX}(2));
 }, | - SPLIT >
 
-${identifiers.OPERATE}: _ =>  ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers._LOADX}(2).reverse(${identifiers.VM}.${identifiers.SHIFTER}(_)).reduce(${identifiers.VM}.${identifiers.SHIFTER}(_))),
+${identifiers.OPERATE}: _ =>  ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers.REVERSE_PROXY}(${identifiers.VM}.${identifiers._LOADX}(2),${identifiers.VM}.${identifiers.SHIFTER}(_)).reduce(${identifiers.VM}.${identifiers.SHIFTER}(_))),
 
 ${MATH_OPERATIONS}
 
@@ -471,13 +494,13 @@ ${identifiers.EXECUTE}: _ => {
 
     const opsCloned = ${identifiers.VM}.${identifiers.OBJECT_CLONER}(_);
 
-    while (${identifiers.VM}.${identifiers.OP_INDEX} < ${identifiers.VM}.${identifiers.OPERATIONS}.length) {
+    while (${identifiers.VM}.${identifiers.OP_INDEX} < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.OPERATIONS})) {
         ${identifiers.VM}.${identifiers.STORE_LABEL}(${identifiers.VM}.${identifiers.GET_NEXT_INSTRUCTION}());
     }
 
     ${identifiers.VM}.${identifiers.OP_INDEX} = 0;
 
-    while (${identifiers.VM}.${identifiers.OP_INDEX} < ${identifiers.VM}.${identifiers.OPERATIONS}.length) {
+    while (${identifiers.VM}.${identifiers.OP_INDEX} < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.OPERATIONS})) {
         ${shuffle ?
         `${identifiers.VM}.${identifiers.INSN_EXECUTOR}(${identifiers.VM}.${identifiers.GET_NEXT_INSTRUCTION}());` :
         `
