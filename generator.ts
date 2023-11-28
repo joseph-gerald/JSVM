@@ -17,16 +17,33 @@ export const transform = async (code: string) => {
     let context: any[] = [];
     let handling_call_expression = 0;
     let output = "";
+    let instructions: any[] = [];
     let store_invokes = 0;
 
     const handledNodeTypes = new Set();
 
     const addInstruction = (instruction: string, args: any = null) => {
-        output += `
-        [
-            ${code_utils.getInstruction(instruction)},${args == null ? '' : '\n            ' + args}
-        ],`
-        return [instruction, args]
+        const instruction_arr = [ code_utils.getInstruction(instruction) ];
+        if(args) instruction_arr.push(args)
+        console.log(instruction_arr)
+        instructions.push(instruction_arr)
+        return instruction_arr
+    }
+
+    const stringify = (instructions: any[]) => {
+
+        let output = "";
+
+        for (const insn of instructions) {
+            output += `
+[
+    ${insn[0]},
+    ${insn[1] == undefined ? '' : typeof insn[1] == "string" ? JSON.stringify(insn[1]) : (typeof insn[1] == "number" ? insn[1] : JSON.stringify(insn[1]))}
+],
+            `
+        }
+
+        return output;
     }
 
     let handled: any[] = [];
@@ -48,7 +65,7 @@ export const transform = async (code: string) => {
                 keys.push(object.name);
                 setHandled(object);
                 if(addInsn) {
-                    node.computed && object == node.property ? addInstruction("READ_REGISTRY", '"' + object.name + '"') : addInstruction("STORE", '"' + object.name + '"');
+                    node.computed && object == node.property ? addInstruction("READ_REGISTRY", object.name) : addInstruction("STORE", object.name);
                 }
             }
 
@@ -74,7 +91,7 @@ export const transform = async (code: string) => {
 
     const handleLiteral = (node: types.Node) => {
         if (types.isNumericLiteral(node) || types.isStringLiteral(node)) {
-            addInstruction("STORE", types.isStringLiteral(node) ? '"' + node.value + '"' : node.value);
+            addInstruction("STORE", types.isStringLiteral(node) ? node.value : node.value);
             setHandled(node);
         }
     }
@@ -88,7 +105,7 @@ export const transform = async (code: string) => {
         handleNode(node)
 
         if (types.isUpdateExpression(node) && types.isIdentifier(node.argument))
-            addInstruction("READ_REGISTRY", JSON.stringify([node.argument.name]))
+            addInstruction("READ_REGISTRY", [node.argument.name])
     }
 
     const handleNode = (node: types.Node) => {
@@ -101,7 +118,7 @@ export const transform = async (code: string) => {
 
         switch (nodeType) {
             case "Program":
-                output = `${code_utils.vmCode}\nend_of_vm_${state}\nvm.EXECUTE([${output}`;
+                output = `${code_utils.vmCode}\nend_of_vm_${state}\n${code_utils.vm_identifier}.EXECUTE([`;
                 break;
 
             // Declerations
@@ -120,12 +137,12 @@ export const transform = async (code: string) => {
                 const params = node.params;
                 const body = node.body;
 
-                addInstruction("STORE", '"' + start + '"')
-                addInstruction("STORE", '"' + id?.name + '"')
+                addInstruction("STORE", start)
+                addInstruction("STORE", id?.name)
                 addInstruction("REGISTER");
 
-                addInstruction("JUMP", '"' + end + '"')
-                addInstruction("LABEL", '"' + start + '"')
+                addInstruction("JUMP", end)
+                addInstruction("LABEL", start)
 
                 context = [id?.name, start]
 
@@ -142,7 +159,7 @@ export const transform = async (code: string) => {
                 context = [];
 
                 addInstruction("RETURN")
-                addInstruction("LABEL", '"' + end + '"')
+                addInstruction("LABEL", end)
                 break;
 
             case "VariableDeclaration":
@@ -169,13 +186,13 @@ export const transform = async (code: string) => {
                     handleNode(node.init)
                 }
 
-                addInstruction("STORE", '"' + identifier + '"');
+                addInstruction("STORE", identifier);
                 addInstruction("REGISTER");
                 break;
 
             case "Identifier":
                 if (!types.isIdentifier(node)) return;
-                addInstruction("READ_REGISTRY", JSON.stringify(context.concat([node.name] as any)));
+                addInstruction("READ_REGISTRY", context.concat([node.name] as any));
                 break;
 
             // Expression
@@ -205,7 +222,7 @@ export const transform = async (code: string) => {
                     } else if (types.isMemberExpression(arg)) {
                         args.push(addInstruction("READ_REGISTRY", JSON.stringify(handleKeys(arg))))
                     } else if (types.isStringLiteral(arg)) {
-                        args.push(addInstruction("STORE", '"' + arg.value + '"'))
+                        args.push(addInstruction("STORE", arg.value))
                     } else if (types.isNumericLiteral(arg)) {
                         args.push(addInstruction("STORE", arg.value))
                     } else if (types.isBinaryExpression(arg)) {
@@ -218,7 +235,7 @@ export const transform = async (code: string) => {
                 }
 
                 handling_call_expression--;
-                addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", [args.length])
+                addInstruction(store_invokes-- > 0 ? "SINVOKE" : "INVOKE", args.length)
                 store_invokes = Math.max(store_invokes, 0);
                 break;
             case "MemberExpression":
@@ -235,7 +252,7 @@ export const transform = async (code: string) => {
                     handleValue(subNode);
                 }
 
-                addInstruction(code_utils.operations[node.operator], "")
+                addInstruction(code_utils.operations[node.operator])
                 break;
             case "AssignmentExpression":
                 if (!types.isAssignmentExpression(node)) return;
@@ -248,7 +265,7 @@ export const transform = async (code: string) => {
                         if (types.isIdentifier(node.left)) {
                             setHandled(node.left);
                             handleValue(node.right)
-                            addInstruction("STORE", '"' + node.left.name + '"');
+                            addInstruction("STORE", node.left.name);
                             addInstruction("REGISTER");
                         }
 
@@ -265,12 +282,12 @@ export const transform = async (code: string) => {
                         if (types.isIdentifier(node.left)) {
                             setHandled(node.left);
 
-                            addInstruction("READ_REGISTRY", '"' + node.left.name + '"')
+                            addInstruction("READ_REGISTRY", node.left.name)
                             handleValue(node.right)
 
                             addInstruction(code_utils.operations[operation])
 
-                            addInstruction("STORE", '"' + node.left.name + '"');
+                            addInstruction("STORE", node.left.name);
                             addInstruction("REGISTER");
                         }
 
@@ -287,10 +304,10 @@ export const transform = async (code: string) => {
                 if (!types.isUpdateExpression(node) || !types.isIdentifier(node.argument)) return;
 
                 handleNode(node.argument);
-                addInstruction("STORE", "1");
+                addInstruction("STORE", 1);
 
                 addInstruction(node.operator == "++" ? "OADD" : "OSUB");
-                addInstruction("STORE", '"' + node.argument.name + '"');
+                addInstruction("STORE", node.argument.name);
                 addInstruction("REGISTER")
                 break;
             case "ObjectExpression":
@@ -350,7 +367,7 @@ export const transform = async (code: string) => {
 
                 }
 
-                addInstruction("CJUMP", '"' + firstBlockEnd + '"')
+                addInstruction("CJUMP", firstBlockEnd)
 
                 // First block
 
@@ -360,8 +377,8 @@ export const transform = async (code: string) => {
                     handleNode(node.consequent);
                 }
 
-                addInstruction("JUMP", '"' + end + '"')
-                addInstruction("LABEL", '"' + firstBlockEnd + '"')
+                addInstruction("JUMP", end)
+                addInstruction("LABEL", firstBlockEnd)
 
                 // Latter block
 
@@ -371,7 +388,7 @@ export const transform = async (code: string) => {
                     handleNode(node.alternate);
                 }
 
-                addInstruction("LABEL", '"' + end + '"')
+                addInstruction("LABEL", end)
                 break;
             case "WhileStatement":
                 if (!types.isWhileStatement(node)) return;
@@ -380,16 +397,16 @@ export const transform = async (code: string) => {
                 var end = string_utils.get_jump_address();
 
                 // Set label at start of block statement so it can jump up to repeat
-                addInstruction("LABEL", '"' + loopStart + '"')
+                addInstruction("LABEL", loopStart)
 
                 // handle test/condition
                 handleTest(node.test)
-                addInstruction("CJUMP", '"' + end + '"')
+                addInstruction("CJUMP", end)
 
                 handleNode(node.body);
 
-                addInstruction("JUMP", '"' + loopStart + '"')
-                addInstruction("LABEL", '"' + end + '"')
+                addInstruction("JUMP", loopStart)
+                addInstruction("LABEL", end)
                 break;
             case "ForStatement":
                 if(!types.isForStatement(node)) return;
@@ -400,17 +417,17 @@ export const transform = async (code: string) => {
                 // let i = 0 - not always present
                 if(node.init) handleNode(node.init);
 
-                addInstruction("LABEL", '"' + loopStart + '"')
+                addInstruction("LABEL", loopStart)
 
                 if(node.update) handleNode(node.update)
                 if(node.test)   handleTest(node.test)
 
-                addInstruction("CJUMP", '"' + end + '"')
+                addInstruction("CJUMP", end)
 
                 handleNode(node.body);
 
-                addInstruction("JUMP", '"' + loopStart + '"')
-                addInstruction("LABEL", '"' + end + '"')
+                addInstruction("JUMP", loopStart)
+                addInstruction("LABEL", end)
                 break;
                 
             // Default case for unhandled node types
@@ -435,7 +452,7 @@ export const transform = async (code: string) => {
         },
     });
 
-    output += "])";
+    output += stringify(instructions) + "])";
     //console.log(output)
 
     const scoped = false;

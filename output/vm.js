@@ -1,231 +1,231 @@
 /* JOVM */
-const vm = {
-    _: 0,
-    t: {
-        o: 33,
-        g: 34,
-        l: 35,
-        D: 36,
-        i: 37,
-        C: 38,
-        A: 39,
-        k: 40,
-        O: 41,
-        X: 42,
-        N: 43
+const _ = {
+    _: e => _.t(_.O(_.o)),
+    g: e => (_.l(e.shift()), _.t(_.C(e.shift()))),
+    set u(e) {
+        _.j(_.G(2))
     },
-    R: _ => vm.T([vm.I, _]),
-    M: _ => vm.V(vm.Z),
-    set q(_) {
-        vm.u([_, (_, e) => _ ** e])
+    L: this,
+    U: e => _.k(_.m[0]),
+    set F(e) {
+        _.M([e, (_, e) => _ | e])
     },
-    H: {
-        L: 11,
-        j: 12,
-        m: 13,
-        p: 14,
-        B: 15,
-        U: 16,
-        h: 17,
-        G: 18,
-        P: 19,
-        W: 20,
-        Y: 21
+    i: _ => structuredClone(_),
+    p: e => _.T[_.K(_.P())] = _.P(),
+    Y: e => _.Z(e),
+    v: e => ["string"].includes(typeof e[0]) ? _.A(e) : _.R(e),
+    set J(e) {
+        _.M([e, (_, e) => _ > e])
     },
-    set v(_) {
-        vm.S(vm.F(vm.V(_)))
+    h: e => _.D([_.q, e]),
+    set H(e) {
+        _.M([e, (_, e) => _ * e])
     },
-    set K(_) {
-        vm.u([_, (_, e) => _ || e])
+    P: e => _.O(_.X),
+    I: e => [_.O(e), e],
+    G: e => ($ = _.X.slice(0, e), _.X = _.X.slice(e, _.X.length), $),
+    j: e => {
+        let t = _.L;
+        for (let _ = 0; _ < e[1].length - 1; _++) t = t[e[1][_]];
+        t[e[1][e[1].length - 1]] = e[0]
     },
-    J: this,
-    $: _ => vm.__(_),
-    set e_(_) {
-        vm.t_(vm.V(_))
+    N: e => _.O(_.m),
+    V: {
+        W: 11,
+        B: 12,
+        S: 13,
+        $: 14,
+        __: 15,
+        e_: 16,
+        t_: 17,
+        O_: 18,
+        s_: 19,
+        o_: 20,
+        n_: 21
     },
-    set p(_) {
-        vm.u([_, (_, e) => _ != e])
+    set a_(e) {
+        _._(e)
     },
-    F: _ => ($ = vm.Z.slice(0, _), vm.Z = vm.Z.slice(_, vm.Z.length), $),
-    set j(_) {
-        vm.s_(vm.V(_))
+    get s_() {
+        return _.P()
     },
-    set o_(_) {
-        vm.u([_, _ => ~_])
+    set g_(e) {
+        _.P() || _.l_(e[0])
     },
-    g_: _ => structuredClone(_),
-    set l_(_) {
-        vm.M() || vm.n_(_[0])
+    M: e => _.Y(_.G(2).reverse(_.O(e)).reduce(_.O(e))),
+    set r_(e) {
+        _.M([e, (_, e) => _ + e])
     },
-    set a_(_) {
-        vm.u([_, (_, e) => _ >= e])
+    get b_() {
+        return _.c_([_.z_.keys, _, [_.C_]])
     },
-    Z: [],
-    r_: [],
-    set c_(_) {
-        vm.y_(vm.V(_))
+    set f_(e) {
+        _.u_
     },
-    D_: [],
-    get x_() {
-        return vm.i_([vm.C_.keys, vm, [vm.E_]])
+    set n_(e) {
+        _.M([e, (_, e) => e > _])
     },
-    set U(_) {
-        vm.u([_, (_, e) => _ / e])
+    set j_(e) {
+        _.Y(_.O(e))
     },
-    set D(_) {
-        vm.u([_, (_, e) => e > _])
+    set x_(e) {
+        _.G_(_.O(e))
     },
-    y_: _ => vm.r_[vm.A_(vm.M())] = vm.M(),
-    k_: _ => {
-        let e = vm.J;
-        for (let t = 0; t < _[1].length - 1; t++) e = e[_[1][t]];
-        e[_[1][_[1].length - 1]] = _[0]
+    set L_(e) {
+        _.M([e, (_, e) => _ >= e])
     },
-    O_: _ => vm.V(_) == vm.E_.X ? vm.$([vm.V(_), vm._]) : _,
-    f_: _ => vm.i_([vm.g_, _, [vm.X_[vm._++]]]),
-    N_: (_, e) => vm[vm.x_[_]] = e,
-    R_: _ => vm.T([vm.Z, _]),
-    set G(_) {
-        vm.T_(), "string" == typeof vm.d_() ? vm.t_(vm.V(_)) : vm.I_(vm.t_(vm.V(_)))
+    Q_: e => _.O(e).reduce(((e = _.O(t), t) => e[t]), _.O(e)),
+    U_: e => _.Z(_.X[0]),
+    set k_(e) {
+        _.M([e, (_, e) => _ && e])
     },
-    s_: _ => vm.I_(vm.r_[vm.A_(_)] ?? vm.M_([_, vm.J, vm.J])),
-    set m(_) {
-        vm.V_(_)
+    u_: e => _.h(e),
+    get m_() {
+        _.U_()
     },
-    Z_: {
-        o_: 0,
-        b_: 1,
-        q_: 2,
-        u_: 3,
-        H_: 4,
-        L_: 5,
-        j_: 6,
-        m_: 7,
-        q: 8,
-        p_: 9,
-        B_: 10
+    set y_(e) {
+        _.F_(_.O(e))
     },
-    Q_: _ => vm.U_[vm.U_.map((_ => _[0])).indexOf(_)][1],
-    set A(_) {
-        vm.u([_, (_, e) => _ == e])
+    M_: e => {
+        for (_.i(e); _.d_ < _.i_.length;) _.p_(_.T_());
+        for (_.d_ = 0; _.d_ < _.i_.length;) _.E_(_.T_())
     },
-    set h_(_) {
-        vm.u([_, (_, e) => _ > e])
+    c_: e => _.O(e).apply(_.O(e), _.O(e)),
+    D: e => _.O(e).unshift(_.O(e)),
+    l_: e => _.t(_.C(e)),
+    set K_(e) {
+        _.M([e, (_, e) => _ / e])
     },
-    V_: _ => vm.w_(vm.V(vm.D_)),
-    G_: _ => (vm.P_(_.shift()), vm.w_(vm.Q_(_.shift()))),
-    set W_(_) {
-        vm.I_(vm.V(_))
+    K: _ => btoa(btoa(btoa(_))).split("").map((_ => _.charCodeAt())).reduce(((_, e) => (e ^ _ / e | e & e | _ << (_.length | _ << e | 1e-5) << (_.length | 41 * _.length) << _ * _) + "" + _)).slice(6, 26),
+    O: _ => _.shift(),
+    set P_(e) {
+        _.M([e, (_, e) => _ ** e])
     },
-    i_: _ => vm.V(_).apply(vm.V(_), vm.V(_)),
-    get E_() {
+    R: e => _.c_([e.shift(), e, _.G(e.shift()).reverse()]),
+    Y_: e => _.M_(_.i_ = e),
+    set Z_(e) {
+        _.M([e, (_, e) => _ != e])
+    },
+    G_: e => _.v([_.N(), e]),
+    d_: 0,
+    set t_(e) {
+        _.p(_.O(e))
+    },
+    m: [],
+    X: [],
+    i_: [],
+    v_: {
+        A_: 0,
+        f_: 1,
+        R_: 2,
+        w_: 3,
+        J_: 4,
+        h_: 5,
+        D_: 6,
+        q_: 7,
+        H_: 8,
+        X_: 9,
+        L_: 10
+    },
+    l: e => _.D([_.o, e]),
+    set A_(e) {
+        _.U(), "string" == typeof _.N() ? _.G_(_.O(e)) : _.Y(_.G_(_.O(e)))
+    },
+    set I_(e) {
+        _.M([e, (_, e) => _ & e])
+    },
+    N_: e => _.k(_.Q_([e, _.L, _.L]) ?? _.Q_([e.map((e => _.K(e))), _.T, _.T])),
+    t: e => _.d_ = e,
+    o: [],
+    Z: e => _.D([_.X, e]),
+    V_: {
+        W_: 44,
+        Z_: 45,
+        r_: 46,
+        B_: 47,
+        S_: 48,
+        P_: 49,
+        _e: 50,
+        ee: 51,
+        te: 52,
+        k_: 53,
+        I_: 54,
+        j_: 55
+    },
+    set O_(e) {
+        _.M([e, _ => !_])
+    },
+    set D_(e) {
+        _.M([e, (_, e) => _ - e])
+    },
+    Oe: {
+        u: 22,
+        se: 23,
+        oe: 24,
+        K_: 25,
+        J: 26,
+        ne: 27,
+        ae: 28,
+        ge: 29,
+        le: 30,
+        g_: 31,
+        x_: 32
+    },
+    A: e => _.g([_.d_, e.shift()]),
+    re: {
+        be: 33,
+        ce: 34,
+        ze: 35,
+        Ce: 36,
+        fe: 37,
+        F: 38,
+        H: 39,
+        y_: 40,
+        m_: 41,
+        ue: 42,
+        a_: 43
+    },
+    set S(e) {
+        _.M([e, (_, e) => e >= _])
+    },
+    set S_(e) {
+        _.l_(_.O(e))
+    },
+    set se(e) {
+        _.M([e, (_, e) => _ || e])
+    },
+    T: [],
+    F_: e => _.Y(_.T[_.K(e)] ?? _.Q_([e, _.L, _.L])),
+    set o_(e) {
+        _.M([e, (_, e) => _ ^ e])
+    },
+    set ge(e) {
+        _.M([e, (_, e) => _ == e])
+    },
+    set te(e) {
+        _.M([e, _ => ~_])
+    },
+    get C_() {
         return {
-            ...vm.Z_,
-            ...vm.H,
-            ...vm.Y_,
-            ...vm.t,
-            ...vm.v_
+            ..._.v_,
+            ..._.V,
+            ..._.Oe,
+            ..._.re,
+            ..._.V_
         }
     },
-    set h(_) {
-        vm.u([_, (_, e) => _ * e])
+    set _e(e) {
+        _.M([e, (_, e) => _ % e])
     },
-    S_: _ => vm.i_([vm.N_, _, vm.z_(_)]),
-    U_: [],
-    Y_: {
-        F_: 22,
-        K_: 23,
-        v: 24,
-        J_: 25,
-        _e: 26,
-        ee: 27,
-        W_: 28,
-        te: 29,
-        se: 30,
-        oe: 31,
-        c_: 32
+    q: [],
+    p_: e => _.O(e) == _.C_.f_ ? _.u_([_.O(e), _.d_]) : e,
+    T_: e => _.c_([_.i, e, [_.i_[_.d_++]]]),
+    je: (e, t) => _[_.b_[e]] = t,
+    z_: Object,
+    set ne(e) {
+        _.N_(_.G(_.O(e)))
     },
-    C_: Object,
-    z_: _ => [vm.V(_), _],
-    T_: _ => vm.R(vm.I[0]),
-    ge: _ => ["string"].includes(typeof _[0]) ? vm.le(_) : vm.ne(_),
-    le: _ => vm.G_([vm._, _.shift()]),
-    ne: _ => vm.i_([_.shift(), _, vm.F(_.shift()).reverse()]),
-    set ae(_) {
-        vm.n_(vm.V(_))
-    },
-    set re(_) {
-        vm.u([_, (_, e) => _ % e])
-    },
-    set W(_) {
-        vm.u([_, _ => !_])
-    },
-    get H_() {
-        return vm.M()
-    },
-    set N(_) {
-        vm.k_(vm.F(2))
-    },
-    set X(_) {
-        vm.$
-    },
-    set L(_) {
-        vm.u([_, (_, e) => _ & e])
-    },
-    ce: _ => vm.ye(vm.X_ = _),
-    M_: _ => vm.V(_).reduce(((_ = vm.V(e), e) => _[e]), vm.V(_)),
-    De: _ => vm.R_(vm.Z[0]),
-    set J_(_) {
-        vm.u([_, (_, e) => _ ^ e])
-    },
-    set p_(_) {
-        vm.u([_, (_, e) => _ && e])
-    },
-    d_: _ => vm.V(vm.I),
-    t_: _ => vm.ge([vm.d_(), _]),
-    set te(_) {
-        vm.u([_, (_, e) => e >= _])
-    },
-    I_: _ => vm.R_(_),
-    get _e() {
-        vm.De()
-    },
-    set i(_) {
-        vm.u([_, (_, e) => _ - e])
-    },
-    u: _ => vm.I_(vm.F(2).reverse(vm.V(_)).reduce(vm.V(_))),
-    set ee(_) {
-        vm.u([_, (_, e) => _ + e])
-    },
-    A_: _ => btoa(btoa(btoa(_))).split("").map((_ => _.charCodeAt())).reduce(((_, e) => (e ^ _ / e | e & e | _ << (_.length | _ << e | 1e-5) << (_.length | 41 * _.length) << _ * _) + "" + _)).slice(6, 26),
-    T: _ => vm.V(_).unshift(vm.V(_)),
-    __: _ => vm.T([vm.U_, _]),
-    n_: _ => vm.w_(vm.Q_(_)),
-    set xe(_) {
-        vm.u([_, (_, e) => _ | e])
-    },
-    ye: _ => {
-        for (vm.g_(_); vm._ < vm.X_.length;) vm.O_(vm.f_());
-        for (vm._ = 0; vm._ < vm.X_.length;) vm.S_(vm.f_())
-    },
-    v_: {
-        l_: 44,
-        h_: 45,
-        K: 46,
-        xe: 47,
-        ie: 48,
-        Ce: 49,
-        Ee: 50,
-        e_: 51,
-        re: 52,
-        Ae: 53,
-        ae: 54,
-        a_: 55
-    },
-    V: _ => _.shift(),
-    w_: _ => vm._ = _,
-    P_: _ => vm.T([vm.D_, _]),
-    S: _ => vm.R(vm.M_([_, vm.J, vm.J]) ?? vm.M_([_.map((_ => vm.A_(_))), vm.r_, vm.r_])),
-    I: [],
-    X_: []
+    k: e => _.D([_.m, e]),
+    E_: e => _.c_([_.je, e, _.I(e)]),
+    C: e => _.q[_.q.map((_ => _[0])).indexOf(e)][1]
 };
