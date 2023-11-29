@@ -220,7 +220,7 @@ export const transform = async (code: string) => {
                         console.log("identifier: " + arg.name)
                         args.push(handleNode(arg))
                     } else if (types.isMemberExpression(arg)) {
-                        args.push(addInstruction("READ_REGISTRY", JSON.stringify(handleKeys(arg))))
+                        args.push(addInstruction("READ_REGISTRY", handleKeys(arg).reverse()))
                     } else if (types.isStringLiteral(arg)) {
                         args.push(addInstruction("STORE", arg.value))
                     } else if (types.isNumericLiteral(arg)) {
@@ -271,7 +271,7 @@ export const transform = async (code: string) => {
 
                         if (types.isMemberExpression(node.left)) {
                             setHandled(node.left);
-                            addInstruction("STORE", JSON.stringify(handleKeys(node.left)));
+                            addInstruction("STORE", handleKeys(node.left).reverse());
                             handleValue(node.right)
                             addInstruction("ASSIGN");
                         }
