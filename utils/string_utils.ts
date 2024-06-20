@@ -168,10 +168,10 @@ export default {
     },
     get_jump_address: function () {
         //return this.make_large_string(Date.now() % 1000000, 5).slice(1)
-        return this.make_circle_string(jumpCount++, 5)
+        //return this.make_circle_string(jumpCount++, 5)
         //return this.getMangledAt(jumpCount++)
         //return this.make_money_string(jumpCount++,5)
-        //return "_"+jumpCount+++"_"
+        //return "JUMP_DEST_"+jumpCount+++"_"
         //return this.make_hexadecimal_string(1 + jumpCount++, 5).slice(1)
     },
     make_money_string: function (index: number, length: number) {

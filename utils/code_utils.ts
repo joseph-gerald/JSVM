@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = false; // false for debug
+const shuffle = true; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,
@@ -64,7 +64,7 @@ const OPCODE_ARRAY = [
     "CJUMP",    // Jump if false
     "JUMP",     // Jump to label
     "INVOKE",   // Invoke Function
-    "SINVOKE",   // Invoke then store Function
+    "SINVOKE",  // Invoke then store Function
     "ASSIGN",   // Assign Global Context
 
     // // Operations

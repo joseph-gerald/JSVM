@@ -192,7 +192,11 @@ export const transform = async (code: string) => {
 
             case "Identifier":
                 if (!types.isIdentifier(node)) return;
-                addInstruction("READ_REGISTRY", context.concat([node.name] as any));
+
+                const contextName = JSON.stringify(context.concat([node.name]) as any);
+                const key = context.length ? contextName : node.name;
+
+                addInstruction("READ_REGISTRY", key);
                 break;
 
             // Expression
@@ -209,7 +213,8 @@ export const transform = async (code: string) => {
                 // coolFunction()
                 if (types.isIdentifier(node.callee)) {
                     setHandled(node.callee)
-                    addInstruction("GET", JSON.stringify([node.callee.name]))
+                    addInstruction("STORE", [node.callee.name])
+                    addInstruction("GET", 1)
                 }
 
                 let args: any[] = [];

@@ -1,20 +1,15 @@
-let age = 1;
-
-while (age < 100) {
-    const canDrink = age > 20;
-    console.log("Age: " + age);
-
-    if(age == 99) {
-        console.log("Almost dead")
-    }
-
-    // Can drink in USA
-    if(canDrink) {
-        console.log("You can drink!");
-    } else {
-        console.log("You not can drink!");
-    }
-    age++;
+function add(o, n) {
+    return o + n
 }
 
-console.log("Dead")
+function mul(o, n) {
+    return o * n
+}
+
+function sub(o, n) {
+    return o - n
+}
+const sum = add(1, 4);
+console.log(sum);
+const product = mul(add(4, 2), sub(3, 1));
+console.log(product);
