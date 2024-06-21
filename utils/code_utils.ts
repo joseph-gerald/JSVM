@@ -3,7 +3,7 @@ import terser from "terser"
 
 import string_utils from "./string_utils";
 
-const shuffle = true; // false for debug
+const shuffle = false; // false for debug
 
 const mangleSettings: MangleOptions = {
     eval: true,

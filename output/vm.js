@@ -1,242 +1,238 @@
 /* JOVM */
-const _ = {
-    _: t => _.t([_.u, _.o(t)]),
-    m: t => _.C([_.l, t]),
-    D: t => _.B(_.g[0]),
-    set O(t) {
-        _.R([t, (_, t) => _ >= t])
+const E = {
+    OPCODES: {
+        DEBUG: 0,
+        STORE: 1,
+        DUP: 2,
+        DEL: 3,
+        LOAD: 4,
+        GOTO: 5,
+        GET: 6,
+        LABEL: 7,
+        RETURN: 8,
+        VISIT: 9,
+        CJUMP: 10,
+        JUMP: 11,
+        INVOKE: 12,
+        SINVOKE: 13,
+        ASSIGN: 14,
+        OADD: 15,
+        OSUB: 16,
+        OMUL: 17,
+        ODIV: 18,
+        OEXP: 19,
+        OMOD: 20,
+        OXOR: 21,
+        OBOR: 22,
+        OAND: 23,
+        ONOT: 24,
+        REGISTER: 25,
+        READ_REGISTRY: 26,
+        OR: 27,
+        NOT: 28,
+        AND: 29,
+        OEQ: 30,
+        OIQ: 31,
+        OGT: 32,
+        OGE: 33,
+        OLT: 34,
+        OLE: 35
     },
-    R: t => _.I(_.V(_.W(2), _.o(t)).reduce(_.o(t))),
-    set A(t) {
-        _.R([t, (_, t) => _ + t])
+    OP_INDEX: 0,
+    OPERATIONS: [],
+    CPOOL: [],
+    STACK: [],
+    REGISTRY: [],
+    LABELS: [],
+    VISITS: [],
+    BTOA: E => btoa(E),
+    BTOA_PROXY: O => E.APPLIER([E.BTOA, E, [O]]),
+    TRIPLE_BTOA: O => E.BTOA_PROXY(E.BTOA_PROXY(E.BTOA_PROXY(O))),
+    EMPTY_STRING: this.name,
+    GETTHIS: this,
+    OBJECT: Object,
+    OBJECT_CLONER: E => structuredClone(E),
+    TYPEOF_PROXY: E => typeof E,
+    EQUALITY_PROXY: O => E.SHIFTER(O) == E.SHIFTER(O),
+    LENGTH_PROXY: E => E.length,
+    MAPPER: O => E.SHIFTER(O).map(E.SHIFTER(O)),
+    REVERSE_PROXY: E => E.reverse(),
+    HASH_MAPPER: E => E.map((E => E.charCodeAt())),
+    HASH_REDUCER: O => O.reduce(((O, T) => (T ^ O / T | T & T | O << (E.LENGTH_PROXY(O) | O << T | 1e-5) << (E.LENGTH_PROXY(O) | 41 * E.LENGTH_PROXY(O)) << O * O) + E.EMPTY_STRING + O)),
+    HASH: O => E.HASH_REDUCER(E.HASH_MAPPER(E.TRIPLE_BTOA(O).split(E.EMPTY_STRING))),
+    CINSERT: O => E.UNSHIFTER([E.CPOOL, O]),
+    SINSERT: O => E.UNSHIFTER([E.STACK, O]),
+    LINSERT: O => E.UNSHIFTER([E.LABELS, O]),
+    VINSERT: O => E.UNSHIFTER([E.VISITS, O]),
+    _LOAD: O => E.SHIFTER(E.CPOOL),
+    _LOADX: O => ($ = E.CPOOL.slice(0, O), E.CPOOL = E.CPOOL.slice(O, E.LENGTH_PROXY(E.CPOOL)),
+        $),
+    _SLOAD: O => E.SHIFTER(E.STACK),
+    _DIG: O => E.SHIFTER(O).reduce(((O = E.SHIFTER(T), T) => O[T]), E.SHIFTER(O)),
+    _DUP: O => E.CINSERT(E.CPOOL[0]),
+    _SDUP: O => E.SINSERT(E.STACK[0]),
+    _STORE: O => E.CINSERT(O),
+    _GET: O => E.SINSERT(E._DIG([O, E.GETTHIS, E.GETTHIS]) ?? E._DIG([O.map((O => E.HASH(O))), E.REGISTRY, E.REGISTRY])),
+    _INVOKE_JUMP: O => E._VISIT([E.OP_INDEX, E.SHIFTER(O)]),
+    _INVOKE_GLOBAL: O => E.APPLIER([E.SHIFTER(O), O, E.REVERSE_PROXY(E._LOADX(E.SHIFTER(O)))]),
+    _INVOKE_MATCH: O => E.EQUALITY_PROXY([E.TYPEOF_PROXY(E.EMPTY_STRING), E.TYPEOF_PROXY(O[0])]) ? E._INVOKE_JUMP(O) : E._INVOKE_GLOBAL(O),
+    _INVOKE: O => E._INVOKE_MATCH([E._SLOAD(), O]),
+    _REGISTER: O => E.REGISTRY[E.HASH(E._LOAD())] = E._LOAD(),
+    _READ_REGISTRY: O => E._STORE(E.REGISTRY[E.HASH(O)] ?? E._DIG([O, E.GETTHIS, E.GETTHIS])),
+    _CREATE_LABEL: O => E.LINSERT(O),
+    _FIND_LABEL: O => E.LABELS[E.LABELS.map((E => E[0])).indexOf(O)][1],
+    _ASSIGN: O => {
+        let T = E.GETTHIS;
+        for (let R = 0; R < E.LENGTH_PROXY(O[1]) - 1; R++) T = T[O[1][R]];
+        T[O[1][E.LENGTH_PROXY(O[1]) - 1]] = O[0];
     },
-    J: t => [_.o(t), t],
-    M: Object,
-    j: [],
-    set p(t) {
-        _.R([t, (_, t) => _ % t])
+    _JUMP_OPERATION: O => E.OP_INDEX = O,
+    _RETURN_VISITOR: O => E._JUMP_OPERATION(E.SHIFTER(E.VISITS)),
+    _VISIT: O => (E.VINSERT(E.SHIFTER(O)), E._JUMP_OPERATION(E._FIND_LABEL(E.SHIFTER(O)))),
+    _JUMP: O => E._JUMP_OPERATION(E._FIND_LABEL(O)),
+    get OPCODE_KEYS() {
+        return E.APPLIER([E.OBJECT.keys, E, [E.OPCODES]]);
     },
-    P: _ => structuredClone(_),
-    set X(t) {
-        _.Z(_.o(t))
+    get LOAD() {
+        return E._LOAD();
     },
-    h: t => _.C([_.q, t]),
-    o: _ => _.shift(),
-    set v(t) {
-        _.R([t, (_, t) => _ ^ t])
+    get DUP() {
+        E._DUP();
     },
-    F: this.name,
-    K: t => _.h(t),
-    set N(t) {
-        _.R([t, (_, t) => _ / t])
+    set GET(O) {
+        E._GET(E._LOADX(E.SHIFTER(O)));
     },
-    S: t => _.L([_.i(), t]),
-    set k(t) {
-        _.D(), _.G(_.F) == _.G(_.i()) ? _.S(_.o(t)) : _.I(_.S(_.o(t)))
+    set STORE(O) {
+        E._STORE(E.SHIFTER(O));
     },
-    T: t => _.o(t) == _.H.Y ? _.K([_.o(t), _.u]) : t,
-    $: t => _.U([_.P, t, [_.__[_.u++]]]),
-    t_: (t, s) => _[_.s_[t]] = s,
-    q: [],
-    get s_() {
-        return _.U([_.M.keys, _, [_.H]])
+    set INVOKE(O) {
+        E._INVOKE(E.SHIFTER(O));
     },
-    e_: {
-        u_: 33,
-        x_: 34,
-        o_: 35,
-        d_: 36,
-        c_: 37,
-        m_: 38,
-        C_: 39,
-        l_: 40,
-        E_: 41,
-        n_: 42,
-        D_: 43
+    set SINVOKE(O) {
+        E._SDUP(), E.TYPEOF_PROXY(E.EMPTY_STRING) == E.TYPEOF_PROXY(E._SLOAD()) ? E._INVOKE(E.SHIFTER(O)) : E._STORE(E._INVOKE(E.SHIFTER(O)));
     },
-    G: _ => typeof _,
-    a_: {
-        B_: 0,
-        g_: 1,
-        O_: 2,
-        R_: 3,
-        r_: 4,
-        Q_: 5,
-        A: 6,
-        b_: 7,
-        X: 8,
-        I_: 9,
-        V_: 10
+    set REGISTER(O) {
+        E._REGISTER(E.SHIFTER(O));
     },
-    W_: _ => btoa(_),
-    A_: t => _.o(t).reduce(((t = _.o(s), s) => t[s]), _.o(t)),
-    f_: t => _.w_(_.y_[0]),
-    set z_(t) {
-        _.R([t, _ => !_])
+    set READ_REGISTRY(O) {
+        E._READ_REGISTRY(E.SHIFTER(O));
     },
-    J_: t => _.j[_.M_(_.j_())] = _.j_(),
-    i: t => _.o(_.g),
-    p_: t => {
-        let s = _.P_;
-        for (let e = 0; e < _.X_(t[1]) - 1; e++) s = s[t[1][e]];
-        s[t[1][_.X_(t[1]) - 1]] = t[0]
+    set LABEL(O) {
+        E._CREATE_LABEL;
     },
-    L: t => _.Z_([_.G(_.F), _.G(t[0])]) ? _._(t) : _.h_(t),
-    q_: {
-        k: 44,
-        v_: 45,
-        N: 46,
-        F_: 47,
-        K_: 48,
-        N_: 49,
-        S_: 50,
-        L_: 51,
-        i_: 52,
-        k_: 53,
-        G_: 54,
-        T_: 55
+    set JUMP(O) {
+        E._JUMP(E.SHIFTER(O));
     },
-    y_: [],
-    get Q_() {
-        return _.j_()
+    set CJUMP(O) {
+        E._LOAD() || E._JUMP(O[0]);
     },
-    Y_: _ => _.map((_ => _.charCodeAt())),
-    H_: t => t.reduce(((t, s) => (s ^ t / s | s & s | t << (_.X_(t) | t << s | 1e-5) << (_.X_(t) | 41 * _.X_(t)) << t * t) + _.F + t)),
-    M_: t => _.H_(_.Y_(_.U_(t).split(_.F))),
-    U_: t => _._t(_._t(_._t(t))),
-    P_: this,
-    j_: t => _.o(_.y_),
-    set tt(t) {
-        _.R([t, (_, t) => t > _])
+    set RETURN(O) {
+        E._RETURN_VISITOR(O);
     },
-    st: t => _.q[_.q.map((_ => _[0])).indexOf(t)][1],
-    set et(t) {
-        _.R([t, (_, t) => _ == t])
+    set ASSIGN(O) {
+        E._ASSIGN(E._LOADX(2));
     },
-    Z_: t => _.o(t) == _.o(t),
-    U: t => _.o(t).apply(_.o(t), _.o(t)),
-    set v_(t) {
-        _.R([t, (_, t) => _ * t])
+    OPERATE: O => E._STORE(E.REVERSE_PROXY(E._LOADX(2), E.SHIFTER(O)).reduce(E.SHIFTER(O))),
+    set OADD(O) {
+        E.OPERATE([O, (E, O) => E + O]);
     },
-    g: [],
-    u: 0,
-    set ut(t) {
-        _.R([t, (_, t) => _ != t])
+    set OSUB(O) {
+        E.OPERATE([O, (E, O) => E - O]);
     },
-    xt: {
-        O: 11,
-        Y: 12,
-        ot: 13,
-        p: 14,
-        dt: 15,
-        ct: 16,
-        tt: 17,
-        Ct: 18,
-        lt: 19,
-        Et: 20,
-        nt: 21
+    set OMUL(O) {
+        E.OPERATE([O, (E, O) => E * O]);
     },
-    set d_(t) {
-        _.j_() || _.Dt(t[0])
+    set ODIV(O) {
+        E.OPERATE([O, (E, O) => E / O]);
     },
-    Bt: t => _.B(_.A_([t, _.P_, _.P_]) ?? _.A_([t.map((t => _.M_(t))), _.j, _.j])),
-    B: t => _.C([_.g, t]),
-    set n_(t) {
-        _.gt(t)
+    set OXOR(O) {
+        E.OPERATE([O, (E, O) => E ^ O]);
     },
-    V: _ => _.reverse(),
-    set F_(t) {
-        _.R([t, (_, t) => _ | t])
+    set OBOR(O) {
+        E.OPERATE([O, (E, O) => E | O]);
     },
-    set dt(t) {
-        _.R([t, (_, t) => _ & t])
+    set OAND(O) {
+        E.OPERATE([O, (E, O) => E & O]);
     },
-    Z: t => _.I(_.j[_.M_(t)] ?? _.A_([t, _.P_, _.P_])),
-    set B_(t) {
-        _.S(_.o(t))
+    set OMOD(O) {
+        E.OPERATE([O, (E, O) => E % O]);
     },
-    Ot: t => _.U([_.t_, t, _.J(t)]),
-    _t: t => _.U([_.W_, _, [t]]),
-    C: t => _.o(t).unshift(_.o(t)),
-    h_: t => _.U([_.o(t), t, _.V(_.W(_.o(t)))]),
-    Rt: t => _.o(t).map(_.o(t)),
-    get H() {
-        return {
-            ..._.a_,
-            ..._.xt,
-            ..._.rt,
-            ..._.e_,
-            ..._.q_
+    set OEXP(O) {
+        E.OPERATE([O, (E, O) => E ** O]);
+    },
+    set AND(O) {
+        E.OPERATE([O, (E, O) => E && O]);
+    },
+    set OR(O) {
+        E.OPERATE([O, (E, O) => E || O]);
+    },
+    set OEQ(O) {
+        E.OPERATE([O, (E, O) => E == O]);
+    },
+    set OIQ(O) {
+        E.OPERATE([O, (E, O) => E != O]);
+    },
+    set OGT(O) {
+        E.OPERATE([O, (E, O) => E > O]);
+    },
+    set OGE(O) {
+        E.OPERATE([O, (E, O) => E >= O]);
+    },
+    set OLT(O) {
+        E.OPERATE([O, (E, O) => O > E]);
+    },
+    set OLE(O) {
+        E.OPERATE([O, (E, O) => O >= E]);
+    },
+    set ONOT(O) {
+        E.OPERATE([O, E => ~E]);
+    },
+    set NOT(O) {
+        E.OPERATE([O, E => !E]);
+    },
+    SHIFTER: E => E.shift(),
+    UNSHIFTER: O => E.SHIFTER(O).unshift(E.SHIFTER(O)),
+    APPLIER: O => E.SHIFTER(O).apply(E.SHIFTER(O), E.SHIFTER(O)),
+    STORE_LABEL: O => E.SHIFTER(O) == E.OPCODES.LABEL ? E._CREATE_LABEL([E.SHIFTER(O), E.OP_INDEX]) : O,
+    GET_NEXT_INSTRUCTION: O => E.APPLIER([E.OBJECT_CLONER, O, [E.OPERATIONS[E.OP_INDEX++]]]),
+    EXECUTE_INSN: (O, T) => E[E.OPCODE_KEYS[O]] = T,
+    EXECUTOR_ARGS: O => [E.SHIFTER(O), O],
+    INSN_EXECUTOR: O => E.APPLIER([E.EXECUTE_INSN, O, E.EXECUTOR_ARGS(O)]),
+    set DEBUG(O) {
+        const T = E.OP_INDEX,
+            R = structuredClone(E.OPERATIONS[T - 1]);
+        console.warn("===========    DEBUG    ==========="), console.warn("DEBUG OCCURED ON INDEX: " + T),
+            console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", E.OPCODES),
+            console.error("Constants:", E.CPOOL), console.error("Obj Stack:", E.STACK), console.error("Registery:", E.REGISTRY),
+            console.error("Visitors :", E.VISITS), console.warn("=========== INSTRUCTION ==========="),
+            console.error("Operation: " + E.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R));
+    },
+    EXECUTE_PROXY: O => {
+        const T = E.OBJECT_CLONER(O);
+        for (; E.OP_INDEX < E.LENGTH_PROXY(E.OPERATIONS);) E.STORE_LABEL(E.GET_NEXT_INSTRUCTION());
+        for (E.OP_INDEX = 0; E.OP_INDEX < E.LENGTH_PROXY(E.OPERATIONS);) {
+            const O = [E.CPOOL, E.STACK, E.REGISTRY, E.VISITS].map((O => {
+                    try {
+                        return E.OBJECT_CLONER(O);
+                    } catch (E) {
+                        return ["error"];
+                    }
+                })),
+                R = E.OP_INDEX;
+            try {
+                E.INSN_EXECUTOR(E.GET_NEXT_INSTRUCTION());
+            } catch (S) {
+                const I = E.OPERATIONS[R];
+                return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + R),
+                    console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", E.OPCODES),
+                    console.error("EXECUTION QUEUE:", T), console.error("Constants:", O[0]), console.error("Obj Stack:", O[1]),
+                    console.error("Registery:", O[2]), console.error("Visitors :", O[3]), console.warn("=========== INSTRUCTION ==========="),
+                    console.error("Operation: " + E.OPCODE_KEYS[I.shift()]), console.error("Arguments: " + JSON.stringify(I)),
+                    console.warn("=========== STACK TRACE ==========="), console.warn("Original:"),
+                    console.error(S), console.warn("Attemping to recreate..."), E.CPOOL = O[0], E.STACK = O[1],
+                    E.REGISTRY = O[2], E.VISITS = O[3], void E.INSN_EXECUTOR(E.OPCODES[R]);
+            }
         }
     },
-    set g_(t) {
-        _.J_(_.o(t))
-    },
-    set Qt(t) {
-        _.R([t, _ => ~_])
-    },
-    set nt(t) {
-        _.R([t, (_, t) => _ && t])
-    },
-    Dt: t => _.bt(_.st(t)),
-    set It(t) {
-        _.p_(_.W(2))
-    },
-    I: t => _.w_(t),
-    Vt: t => {
-        for (_.P(t); _.u < _.X_(_.__);) _.T(_.$());
-        for (_.u = 0; _.u < _.X_(_.__);) _.Ot(_.$())
-    },
-    W: t => ($ = _.y_.slice(0, t), _.y_ = _.y_.slice(t, _.X_(_.y_)), $),
-    set Ct(t) {
-        _.R([t, (_, t) => t >= _])
-    },
-    set T_(t) {
-        _.R([t, (_, t) => _ > t])
-    },
-    set l_(t) {
-        _.R([t, (_, t) => _ || t])
-    },
-    bt: t => _.u = t,
-    rt: {
-        Wt: 22,
-        At: 23,
-        z_: 24,
-        Qt: 25,
-        ut: 26,
-        It: 27,
-        et: 28,
-        v: 29,
-        ft: 30,
-        wt: 31,
-        yt: 32
-    },
-    set E_(t) {
-        _.Bt(_.W(_.o(t)))
-    },
-    set u_(t) {
-        _.Dt(_.o(t))
-    },
-    __: [],
-    set Y(t) {
-        _.K
-    },
-    set x_(t) {
-        _.R([t, (_, t) => _ - t])
-    },
-    set Et(t) {
-        _.I(_.o(t))
-    },
-    gt: t => _.bt(_.o(_.l)),
-    t: t => (_.m(_.o(t)), _.bt(_.st(_.o(t)))),
-    zt: t => _.Vt(_.__ = t),
-    l: [],
-    X_: _ => _.length,
-    get c_() {
-        _.f_()
-    },
-    set L_(t) {
-        _.R([t, (_, t) => _ ** t])
-    },
-    w_: t => _.C([_.y_, t])
+    EXECUTE: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
 };
