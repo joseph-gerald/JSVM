@@ -66,6 +66,7 @@ const OPCODE_ARRAY = [
     "INVOKE",   // Invoke Function
     "SINVOKE",  // Invoke then store Function
     "ASSIGN",   // Assign Global Context
+    "ASSIGN_FUNCTION", // Assign VM Function to Global Context
 
     // // Operations
 
@@ -201,7 +202,11 @@ const identifiers: { [key: string]: any } = {
     EXECUTE_INSN: "EXECUTE_INSN",
     EXECUTOR_ARGS: "EXECUTOR_ARGS",
     INSN_EXECUTOR: "INSN_EXECUTOR",
+    
+    EXECUTION_ENTRY: "EXECUTION_ENTRY",
     EXECUTE: "EXECUTE_PROXY",
+    EXECUTE_INDEPENDENT: "EXECUTE_INDEPENDENT",
+
     GET_NEXT_INSTRUCTION: "GET_NEXT_INSTRUCTION",
 
     BTOA: "BTOA",
@@ -387,7 +392,7 @@ ${identifiers._READ_REGISTRY}: _ => ${identifiers.VM}.${identifiers._STORE}(${id
 ${identifiers._CREATE_LABEL}: _ => ${identifiers.VM}.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => ${identifiers.VM}.${identifiers.LABELS}[${identifiers.VM}.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
 
-${identifiers._ASSIGN}: _ => {let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1; $++) context = context[_[1][$]];context[_[1][${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1]] = _[0]}, | - SPLIT >
+${identifiers._ASSIGN}: _ => {console.log(_);let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1; $++) context = context[_[1][$]];context[_[1][${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1]] = _[0]}, | - SPLIT >
 ${identifiers._JUMP_OPERATION}: _ => ${identifiers.VM}.${identifiers.OP_INDEX} = _, | - SPLIT >
 
 ${identifiers._RETURN_VISITOR}: _ => ${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers.SHIFTER}(${identifiers.VM}.${identifiers.VISITS})),
@@ -454,6 +459,10 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN]}(_) {
     ${identifiers.VM}.${identifiers._ASSIGN}(${identifiers.VM}.${identifiers._LOADX}(2));
 }, | - SPLIT >
 
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN_FUNCTION]}(_) {
+    ${identifiers.VM}.${identifiers._ASSIGN}([function() {${identifiers.VM}.${identifiers.EXECUTE_INDEPENDENT}([${identifiers.VM}.${identifiers._SLOAD}(), arguments])}, ${identifiers.VM}.${identifiers._LOAD}()]);
+}, | - SPLIT >
+
 ${identifiers.OPERATE}: _ =>  ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers.REVERSE_PROXY}(${identifiers.VM}.${identifiers._LOADX}(2),${identifiers.VM}.${identifiers.SHIFTER}(_)).reduce(${identifiers.VM}.${identifiers.SHIFTER}(_))),
 
 ${MATH_OPERATIONS}
@@ -490,8 +499,15 @@ ${shuffle ? "" : `set ${OPCODE_KEYS[ORIGINAL_OPCODES.DEBUG]}(_) {
     console.error("Arguments: " + JSON.stringify(instruction));
 }, | - SPLIT >`}
 
-${identifiers.EXECUTE}: _ => {
+${identifiers.EXECUTE_INDEPENDENT}: _ => {
+    const clonedVM = Object.entries(${identifiers.VM}).reduce((ac, cv) => {ac ??= {}; ac[cv[0]] = cv[1]; return ac}, {});
+    clonedVM.${identifiers.REGISTRY} = ${identifiers.VM}.${identifiers.REGISTRY}; // Refrence instead of shallow copy
+    ${identifiers.VM}.${identifiers.UNSHIFTER}([clonedVM.${identifiers.OPERATIONS}, [${identifiers.VM}.${identifiers.OPCODES}.${OPCODE_KEYS[ORIGINAL_OPCODES.JUMP]}, ${identifiers.VM}.${identifiers.SHIFTER}(_)]]);
+    ${identifiers.VM}.${identifiers.UNSHIFTER}([clonedVM.${identifiers.CPOOL}, ...${identifiers.VM}.${identifiers.SHIFTER}(_)]);
+    clonedVM.${identifiers.EXECUTION_ENTRY}(clonedVM.${identifiers.OPERATIONS});
+}, | - SPLIT >
 
+${identifiers.EXECUTE}: _ => {
     const opsCloned = ${identifiers.VM}.${identifiers.OBJECT_CLONER}(_);
 
     while (${identifiers.VM}.${identifiers.OP_INDEX} < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.OPERATIONS})) {
@@ -542,7 +558,7 @@ ${identifiers.EXECUTE}: _ => {
     }
 }, | - SPLIT >
 
-EXECUTE: _ => ${identifiers.VM}.${identifiers.EXECUTE}(${identifiers.VM}.${identifiers.OPERATIONS} = _),
+${identifiers.EXECUTION_ENTRY}: _ => ${identifiers.VM}.${identifiers.EXECUTE}(${identifiers.VM}.${identifiers.OPERATIONS} = _),
 `.split(" | - SPLIT >")
 
 if (shuffle) vmBody = string_utils.shuffleArray(vmBody);

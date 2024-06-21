@@ -108,7 +108,7 @@ export const transform = async (code: string) => {
             addInstruction("READ_REGISTRY", [node.argument.name])
     }
 
-    const handleNode = (node: types.Node) => {
+    const handleNode = (node: types.Node, parent?: types.Node) => {
         const nodeType = node.type;
 
         if (handled.includes(node.loc)) {
@@ -118,7 +118,7 @@ export const transform = async (code: string) => {
 
         switch (nodeType) {
             case "Program":
-                output = `${code_utils.vmCode}\nend_of_vm_${state}\n${code_utils.vm_identifier}.EXECUTE([`;
+                output = `${code_utils.vmCode}\nend_of_vm_${state}\n${code_utils.vm_identifier}.EXECUTION_ENTRY([`;
                 break;
 
             // Declerations
@@ -262,8 +262,9 @@ export const transform = async (code: string) => {
             case "AssignmentExpression":
                 if (!types.isAssignmentExpression(node)) return;
                 if (!types.isIdentifier(node.left) && !types.isMemberExpression(node.left)) return;
+                if (!types.isExpressionStatement(parent)) return;
 
-
+                const isJSVMFunctionAssignment = parent.trailingComments && parent.trailingComments[0].value.includes("@jsvm/function");
 
                 switch (node.operator) {
                     case "=":
@@ -277,8 +278,18 @@ export const transform = async (code: string) => {
                         if (types.isMemberExpression(node.left)) {
                             setHandled(node.left);
                             addInstruction("STORE", handleKeys(node.left).reverse());
-                            handleValue(node.right)
-                            addInstruction("ASSIGN");
+
+                            if (isJSVMFunctionAssignment) {
+                                if (types.isIdentifier(node.right)) {
+                                    addInstruction("STORE", [node.right.name]);
+                                    addInstruction("GET", 1);
+                                    addInstruction("ASSIGN_FUNCTION");
+                                    setHandled(node.right)
+                                }
+                            } else {
+                                handleValue(node.right)
+                                addInstruction("ASSIGN");
+                            }
                         }
                         break;
                     default:
@@ -339,7 +350,7 @@ export const transform = async (code: string) => {
                 break;
             case "ExpressionStatement":
                 if (!types.isExpressionStatement(node)) return;
-                handleNode(node.expression);
+                handleNode(node.expression, node);
                 break;
             case "ReturnStatement":
                 if (!types.isReturnStatement(node)) return;

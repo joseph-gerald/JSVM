@@ -16,27 +16,28 @@ const E = {
         INVOKE: 12,
         SINVOKE: 13,
         ASSIGN: 14,
-        OADD: 15,
-        OSUB: 16,
-        OMUL: 17,
-        ODIV: 18,
-        OEXP: 19,
-        OMOD: 20,
-        OXOR: 21,
-        OBOR: 22,
-        OAND: 23,
-        ONOT: 24,
-        REGISTER: 25,
-        READ_REGISTRY: 26,
-        OR: 27,
-        NOT: 28,
-        AND: 29,
-        OEQ: 30,
-        OIQ: 31,
-        OGT: 32,
-        OGE: 33,
-        OLT: 34,
-        OLE: 35
+        ASSIGN_FUNCTION: 15,
+        OADD: 16,
+        OSUB: 17,
+        OMUL: 18,
+        ODIV: 19,
+        OEXP: 20,
+        OMOD: 21,
+        OXOR: 22,
+        OBOR: 23,
+        OAND: 24,
+        ONOT: 25,
+        REGISTER: 26,
+        READ_REGISTRY: 27,
+        OR: 28,
+        NOT: 29,
+        AND: 30,
+        OEQ: 31,
+        OIQ: 32,
+        OGT: 33,
+        OGE: 34,
+        OLT: 35,
+        OLE: 36
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -82,6 +83,7 @@ const E = {
     _CREATE_LABEL: O => E.LINSERT(O),
     _FIND_LABEL: O => E.LABELS[E.LABELS.map((E => E[0])).indexOf(O)][1],
     _ASSIGN: O => {
+        console.log(O);
         let T = E.GETTHIS;
         for (let R = 0; R < E.LENGTH_PROXY(O[1]) - 1; R++) T = T[O[1][R]];
         T[O[1][E.LENGTH_PROXY(O[1]) - 1]] = O[0];
@@ -131,6 +133,11 @@ const E = {
     },
     set ASSIGN(O) {
         E._ASSIGN(E._LOADX(2));
+    },
+    set ASSIGN_FUNCTION(O) {
+        E._ASSIGN([function() {
+            E.EXECUTE_INDEPENDENT([E._SLOAD(), arguments]);
+        }, E._LOAD()]);
     },
     OPERATE: O => E._STORE(E.REVERSE_PROXY(E._LOADX(2), E.SHIFTER(O)).reduce(E.SHIFTER(O))),
     set OADD(O) {
@@ -207,6 +214,11 @@ const E = {
             console.error("Visitors :", E.VISITS), console.warn("=========== INSTRUCTION ==========="),
             console.error("Operation: " + E.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R));
     },
+    EXECUTE_INDEPENDENT: O => {
+        const T = Object.entries(E).reduce(((E, O) => (E ??= {}, E[O[0]] = O[1], E)), {});
+        T.REGISTRY = E.REGISTRY, E.UNSHIFTER([T.OPERATIONS, [E.OPCODES.JUMP, E.SHIFTER(O)]]),
+            E.UNSHIFTER([T.CPOOL, ...E.SHIFTER(O)]), T.EXECUTION_ENTRY(T.OPERATIONS);
+    },
     EXECUTE_PROXY: O => {
         const T = E.OBJECT_CLONER(O);
         for (; E.OP_INDEX < E.LENGTH_PROXY(E.OPERATIONS);) E.STORE_LABEL(E.GET_NEXT_INSTRUCTION());
@@ -234,5 +246,5 @@ const E = {
             }
         }
     },
-    EXECUTE: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
+    EXECUTION_ENTRY: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
 };
