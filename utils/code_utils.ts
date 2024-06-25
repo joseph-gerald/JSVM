@@ -56,6 +56,8 @@ const OPCODE_ARRAY = [
     "GOTO",     // jump to bytecode index
     "GET",      // fetch from global context
 
+    "SET_CONTEXT", // set reference context
+
     // Control Flow
 
     "LABEL",    // Label
@@ -120,8 +122,6 @@ if (shuffle) {
     // ORIGINAL_OPCODES = string_utils.shuffleDict(ORIGINAL_OPCODES); // won't work with current index based instruction handler
 }
 
-//console.log(ORIGINAL_OPCODES)
-
 const OPCODES: { [key: string]: any } = structuredClone(ORIGINAL_OPCODES);
 
 if (shuffle) {
@@ -170,6 +170,9 @@ const identifiers: { [key: string]: any } = {
     _INVOKE_GLOBAL: "_INVOKE_GLOBAL",
     _REGISTER: "_REGISTER",
     _READ_REGISTRY: "_READ_REGISTRY",
+
+    CONTEXT: "CONTEXT",
+    SET_CONTEXT: "SET_CONTEXT",
 
     REGISTER: "REGISTER",
     READ_REGISTRY: "READ_REGISTRY",
@@ -278,8 +281,6 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES[isUnary ? unaryOperations[operation] : binary
     `
 }
 
-//console.log(MATH_OPERATIONS)
-
 function splitObject(obj: any, chunkLength: number): any[] {
     let keys = Object.keys(obj);
 
@@ -349,6 +350,7 @@ ${identifiers.STACK}: [], // virtual stack | - SPLIT >
 ${identifiers.REGISTRY}: [], // variable registry | - SPLIT >
 ${identifiers.LABELS}: [], // label registry | - SPLIT >
 ${identifiers.VISITS}: [], // visit stack | - SPLIT >
+${identifiers.CONTEXT}: [], // global context | - SPLIT >
 
 ${identifiers.BTOA}: _ => btoa(_), | - SPLIT >
 ${identifiers.BTOA_PROXY}: _ => ${identifiers.VM}.${identifiers.APPLIER}([${identifiers.VM}.${identifiers.BTOA},${identifiers.VM},[_]]), | - SPLIT >
@@ -386,13 +388,13 @@ ${identifiers._INVOKE_JUMP}: _ => ${identifiers.VM}.${identifiers._VISIT}([${ide
 ${identifiers._INVOKE_GLOBAL}: _ => ${identifiers.VM}.${identifiers.APPLIER}([${identifiers.VM}.${identifiers.SHIFTER}(_),_, ${identifiers.VM}.${identifiers.REVERSE_PROXY}(${identifiers.VM}.${identifiers._LOADX}(${identifiers.VM}.${identifiers.SHIFTER}(_)))]), | - SPLIT >
 ${identifiers._INVOKE_MATCH}: _ => ${identifiers.VM}.${identifiers.EQUALITY_PROXY}([${identifiers.VM}.${identifiers.TYPEOF_PROXY}(${identifiers.VM}.${identifiers.EMPTY_STRING}),${identifiers.VM}.${identifiers.TYPEOF_PROXY}(_[0])]) ? ${identifiers.VM}.${identifiers._INVOKE_JUMP}(_) : ${identifiers.VM}.${identifiers._INVOKE_GLOBAL}(_), | - SPLIT >
 ${identifiers._INVOKE}: _ => ${identifiers.VM}.${identifiers._INVOKE_MATCH}([${identifiers.VM}.${identifiers._SLOAD}(),_]), | - SPLIT >
-${identifiers._REGISTER}: _ => ${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(${identifiers.VM}.${identifiers._LOAD}())] = ${identifiers.VM}.${identifiers._LOAD}(), | - SPLIT >
-${identifiers._READ_REGISTRY}: _ => ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(_)]??${identifiers.VM}.${identifiers._DIG}([_,${identifiers.VM}.${identifiers.GETTHIS},${identifiers.VM}.${identifiers.GETTHIS}])), | - SPLIT >
+${identifiers._REGISTER}: _ => ${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.CONTEXT}) ? ${identifiers.VM}.${identifiers.HASH}(${identifiers.VM}.${identifiers.CONTEXT}.concat(${identifiers.VM}.${identifiers._LOAD}())) : ${identifiers.VM}.${identifiers.HASH}(${identifiers.VM}.${identifiers._LOAD}())] = ${identifiers.VM}.${identifiers._LOAD}(), | - SPLIT >
+${identifiers._READ_REGISTRY}: _ => ${identifiers.VM}.${identifiers._STORE}((${identifiers.VM}.${identifiers.LENGTH_PROXY}(${identifiers.VM}.${identifiers.CONTEXT}) ? (${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(${identifiers.VM}.${identifiers.CONTEXT}.concat(_))] ?? ${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(_)]) : ${identifiers.VM}.${identifiers.REGISTRY}[${identifiers.VM}.${identifiers.HASH}(_)] )??${identifiers.VM}.${identifiers._DIG}([_,${identifiers.VM}.${identifiers.GETTHIS},${identifiers.VM}.${identifiers.GETTHIS}])), | - SPLIT >
 
 ${identifiers._CREATE_LABEL}: _ => ${identifiers.VM}.${identifiers.LINSERT}(_), | - SPLIT >
 ${identifiers._FIND_LABEL}: _ => ${identifiers.VM}.${identifiers.LABELS}[${identifiers.VM}.${identifiers.LABELS}.map(_ => _[0]).indexOf(_)][1], | - SPLIT >
 
-${identifiers._ASSIGN}: _ => {console.log(_);let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1; $++) context = context[_[1][$]];context[_[1][${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1]] = _[0]}, | - SPLIT >
+${identifiers._ASSIGN}: _ => {let context = ${identifiers.VM}.${identifiers.GETTHIS};for (let $ = 0; $ < ${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1; $++) context = context[_[1][$]];context[_[1][${identifiers.VM}.${identifiers.LENGTH_PROXY}(_[1]) - 1]] = _[0]}, | - SPLIT >
 ${identifiers._JUMP_OPERATION}: _ => ${identifiers.VM}.${identifiers.OP_INDEX} = _, | - SPLIT >
 
 ${identifiers._RETURN_VISITOR}: _ => ${identifiers.VM}.${identifiers._JUMP_OPERATION}(${identifiers.VM}.${identifiers.SHIFTER}(${identifiers.VM}.${identifiers.VISITS})),
@@ -431,6 +433,10 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.SINVOKE]}(_) {
     }
 }, | - SPLIT >
 
+set ${OPCODE_KEYS[ORIGINAL_OPCODES.SET_CONTEXT]}(_) {
+    ${identifiers.VM}.${identifiers.CONTEXT} = ${identifiers.VM}.${identifiers.SHIFTER}(_);
+}, | - SPLIT >
+
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.REGISTER]}(_) {
     ${identifiers.VM}.${identifiers._REGISTER}(${identifiers.VM}.${identifiers.SHIFTER}(_))
 }, | - SPLIT >
@@ -460,7 +466,12 @@ set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN]}(_) {
 }, | - SPLIT >
 
 set ${OPCODE_KEYS[ORIGINAL_OPCODES.ASSIGN_FUNCTION]}(_) {
-    ${identifiers.VM}.${identifiers._ASSIGN}([function() {${identifiers.VM}.${identifiers.EXECUTE_INDEPENDENT}([${identifiers.VM}.${identifiers._SLOAD}(), arguments])}, ${identifiers.VM}.${identifiers._LOAD}()]);
+    const jump_dest = ${identifiers.VM}.${identifiers._SLOAD}();
+
+    const execute = ${identifiers.VM}.${identifiers.EXECUTE_INDEPENDENT};
+    const func = function() { execute([jump_dest, arguments])};
+
+    ${identifiers.VM}.${identifiers._ASSIGN}([func, ${identifiers.VM}.${identifiers._LOAD}()]);
 }, | - SPLIT >
 
 ${identifiers.OPERATE}: _ =>  ${identifiers.VM}.${identifiers._STORE}(${identifiers.VM}.${identifiers.REVERSE_PROXY}(${identifiers.VM}.${identifiers._LOADX}(2),${identifiers.VM}.${identifiers.SHIFTER}(_)).reduce(${identifiers.VM}.${identifiers.SHIFTER}(_))),
@@ -493,18 +504,27 @@ ${shuffle ? "" : `set ${OPCODE_KEYS[ORIGINAL_OPCODES.DEBUG]}(_) {
     console.error("Obj Stack:",${identifiers.VM}.${identifiers.STACK});
     console.error("Registery:",${identifiers.VM}.${identifiers.REGISTRY});
     console.error("Visitors :",${identifiers.VM}.${identifiers.VISITS});
+    console.error("Context :",${identifiers.VM}.${identifiers.CONTEXT});
 
     console.warn("=========== INSTRUCTION ===========");
-    console.error("Operation: " + ${identifiers.VM}.${identifiers.OPCODE_KEYS}[instruction.shift()]);
+    console.error("Operation: " + ${identifiers.VM}.${identifiers.OPCODE_KEYS}[instruction[0]]);
     console.error("Arguments: " + JSON.stringify(instruction));
 }, | - SPLIT >`}
 
 ${identifiers.EXECUTE_INDEPENDENT}: _ => {
-    const clonedVM = Object.entries(${identifiers.VM}).reduce((ac, cv) => {ac ??= {}; ac[cv[0]] = cv[1]; return ac}, {});
-    clonedVM.${identifiers.REGISTRY} = ${identifiers.VM}.${identifiers.REGISTRY}; // Refrence instead of shallow copy
+    const oldCPOOL = ${identifiers.VM}.${identifiers.CPOOL};
+    const clonedVM = Object.entries(${identifiers.VM}).reduce((ac, cv) => {ac ??= {}; ac[cv[0]] = ((cv[1] instanceof Function || (() => {try { structuredClone(cv[1]); return True } catch { return False} })) ? cv[1] : console.log(cv)+structuredClone(cv[1])); return ac}, {});
+    ${identifiers.VM}.${identifiers.CPOOL} = oldCPOOL;
+    console.log("TEST",oldCPOOL,JSON.stringify(${identifiers.VM}.${identifiers.CPOOL}))
+
+    clonedVM.${identifiers.REGISTRY} = ${identifiers.VM}.${identifiers.REGISTRY}; // Reference instead of shallow copy
     ${identifiers.VM}.${identifiers.UNSHIFTER}([clonedVM.${identifiers.OPERATIONS}, [${identifiers.VM}.${identifiers.OPCODES}.${OPCODE_KEYS[ORIGINAL_OPCODES.JUMP]}, ${identifiers.VM}.${identifiers.SHIFTER}(_)]]);
     ${identifiers.VM}.${identifiers.UNSHIFTER}([clonedVM.${identifiers.CPOOL}, ...${identifiers.VM}.${identifiers.SHIFTER}(_)]);
+    
+    const oldIndex = ${identifiers.VM}.${identifiers.OP_INDEX};
     clonedVM.${identifiers.EXECUTION_ENTRY}(clonedVM.${identifiers.OPERATIONS});
+    ${identifiers.VM}.${identifiers._JUMP_OPERATION}(oldIndex);
+    ${identifiers.VM}.${identifiers.DEBUG} = "";
 }, | - SPLIT >
 
 ${identifiers.EXECUTE}: _ => {
@@ -520,7 +540,7 @@ ${identifiers.EXECUTE}: _ => {
         ${shuffle ?
         `${identifiers.VM}.${identifiers.INSN_EXECUTOR}(${identifiers.VM}.${identifiers.GET_NEXT_INSTRUCTION}());` :
         `
-        const cloned = [${identifiers.VM}.${identifiers.CPOOL},${identifiers.VM}.${identifiers.STACK},${identifiers.VM}.${identifiers.REGISTRY},${identifiers.VM}.${identifiers.VISITS}].map(_ => {try{return ${identifiers.VM}.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
+        const cloned = [${identifiers.VM}.${identifiers.CPOOL},${identifiers.VM}.${identifiers.STACK},${identifiers.VM}.${identifiers.REGISTRY},${identifiers.VM}.${identifiers.VISITS},${identifiers.VM}.${identifiers.CONTEXT}].map(_ => {try{return ${identifiers.VM}.${identifiers.OBJECT_CLONER}(_)}catch(e){return ["error"]}});
         const index = ${identifiers.VM}.${identifiers.OP_INDEX};
         try {
             ${identifiers.VM}.${identifiers.INSN_EXECUTOR}(${identifiers.VM}.${identifiers.GET_NEXT_INSTRUCTION}());
@@ -537,6 +557,7 @@ ${identifiers.EXECUTE}: _ => {
             console.error("Obj Stack:",cloned[1]);
             console.error("Registery:",cloned[2]);
             console.error("Visitors :",cloned[3]);
+            console.error("Context  :",cloned[4]);
 
             console.warn("=========== INSTRUCTION ===========");
             console.error("Operation: " + ${identifiers.VM}.${identifiers.OPCODE_KEYS}[instruction.shift()]);

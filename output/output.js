@@ -8,36 +8,37 @@ const E = {
         LOAD: 4,
         GOTO: 5,
         GET: 6,
-        LABEL: 7,
-        RETURN: 8,
-        VISIT: 9,
-        CJUMP: 10,
-        JUMP: 11,
-        INVOKE: 12,
-        SINVOKE: 13,
-        ASSIGN: 14,
-        ASSIGN_FUNCTION: 15,
-        OADD: 16,
-        OSUB: 17,
-        OMUL: 18,
-        ODIV: 19,
-        OEXP: 20,
-        OMOD: 21,
-        OXOR: 22,
-        OBOR: 23,
-        OAND: 24,
-        ONOT: 25,
-        REGISTER: 26,
-        READ_REGISTRY: 27,
-        OR: 28,
-        NOT: 29,
-        AND: 30,
-        OEQ: 31,
-        OIQ: 32,
-        OGT: 33,
-        OGE: 34,
-        OLT: 35,
-        OLE: 36
+        SET_CONTEXT: 7,
+        LABEL: 8,
+        RETURN: 9,
+        VISIT: 10,
+        CJUMP: 11,
+        JUMP: 12,
+        INVOKE: 13,
+        SINVOKE: 14,
+        ASSIGN: 15,
+        ASSIGN_FUNCTION: 16,
+        OADD: 17,
+        OSUB: 18,
+        OMUL: 19,
+        ODIV: 20,
+        OEXP: 21,
+        OMOD: 22,
+        OXOR: 23,
+        OBOR: 24,
+        OAND: 25,
+        ONOT: 26,
+        REGISTER: 27,
+        READ_REGISTRY: 28,
+        OR: 29,
+        NOT: 30,
+        AND: 31,
+        OEQ: 32,
+        OIQ: 33,
+        OGT: 34,
+        OGE: 35,
+        OLT: 36,
+        OLE: 37
     },
     OP_INDEX: 0,
     OPERATIONS: [],
@@ -46,6 +47,7 @@ const E = {
     REGISTRY: [],
     LABELS: [],
     VISITS: [],
+    CONTEXT: [],
     BTOA: E => btoa(E),
     BTOA_PROXY: O => E.APPLIER([ E.BTOA, E, [ O ] ]),
     TRIPLE_BTOA: O => E.BTOA_PROXY(E.BTOA_PROXY(E.BTOA_PROXY(O))),
@@ -78,12 +80,11 @@ const E = {
     _INVOKE_GLOBAL: O => E.APPLIER([ E.SHIFTER(O), O, E.REVERSE_PROXY(E._LOADX(E.SHIFTER(O))) ]),
     _INVOKE_MATCH: O => E.EQUALITY_PROXY([ E.TYPEOF_PROXY(E.EMPTY_STRING), E.TYPEOF_PROXY(O[0]) ]) ? E._INVOKE_JUMP(O) : E._INVOKE_GLOBAL(O),
     _INVOKE: O => E._INVOKE_MATCH([ E._SLOAD(), O ]),
-    _REGISTER: O => E.REGISTRY[E.HASH(E._LOAD())] = E._LOAD(),
-    _READ_REGISTRY: O => E._STORE(E.REGISTRY[E.HASH(O)] ?? E._DIG([ O, E.GETTHIS, E.GETTHIS ])),
+    _REGISTER: O => E.REGISTRY[E.LENGTH_PROXY(E.CONTEXT) ? E.HASH(E.CONTEXT.concat(E._LOAD())) : E.HASH(E._LOAD())] = E._LOAD(),
+    _READ_REGISTRY: O => E._STORE((E.LENGTH_PROXY(E.CONTEXT) ? E.REGISTRY[E.HASH(E.CONTEXT.concat(O))] ?? E.REGISTRY[E.HASH(O)] : E.REGISTRY[E.HASH(O)]) ?? E._DIG([ O, E.GETTHIS, E.GETTHIS ])),
     _CREATE_LABEL: O => E.LINSERT(O),
     _FIND_LABEL: O => E.LABELS[E.LABELS.map((E => E[0])).indexOf(O)][1],
     _ASSIGN: O => {
-        console.log(O);
         let T = E.GETTHIS;
         for (let R = 0; R < E.LENGTH_PROXY(O[1]) - 1; R++) T = T[O[1][R]];
         T[O[1][E.LENGTH_PROXY(O[1]) - 1]] = O[0];
@@ -113,6 +114,9 @@ const E = {
     set SINVOKE(O) {
         E._SDUP(), E.TYPEOF_PROXY(E.EMPTY_STRING) == E.TYPEOF_PROXY(E._SLOAD()) ? E._INVOKE(E.SHIFTER(O)) : E._STORE(E._INVOKE(E.SHIFTER(O)));
     },
+    set SET_CONTEXT(O) {
+        E.CONTEXT = E.SHIFTER(O);
+    },
     set REGISTER(O) {
         E._REGISTER(E.SHIFTER(O));
     },
@@ -135,8 +139,9 @@ const E = {
         E._ASSIGN(E._LOADX(2));
     },
     set ASSIGN_FUNCTION(O) {
+        const T = E._SLOAD(), R = E.EXECUTE_INDEPENDENT;
         E._ASSIGN([ function() {
-            E.EXECUTE_INDEPENDENT([ E._SLOAD(), arguments ]);
+            R([ T, arguments ]);
         }, E._LOAD() ]);
     },
     OPERATE: O => E._STORE(E.REVERSE_PROXY(E._LOADX(2), E.SHIFTER(O)).reduce(E.SHIFTER(O))),
@@ -210,19 +215,27 @@ const E = {
         console.warn("===========    DEBUG    ==========="), console.warn("DEBUG OCCURED ON INDEX: " + T), 
         console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", E.OPCODES), 
         console.error("Constants:", E.CPOOL), console.error("Obj Stack:", E.STACK), console.error("Registery:", E.REGISTRY), 
-        console.error("Visitors :", E.VISITS), console.warn("=========== INSTRUCTION ==========="), 
-        console.error("Operation: " + E.OPCODE_KEYS[R.shift()]), console.error("Arguments: " + JSON.stringify(R));
+        console.error("Visitors :", E.VISITS), console.error("Context :", E.CONTEXT), console.warn("=========== INSTRUCTION ==========="), 
+        console.error("Operation: " + E.OPCODE_KEYS[R[0]]), console.error("Arguments: " + JSON.stringify(R));
     },
     EXECUTE_INDEPENDENT: O => {
-        const T = Object.entries(E).reduce(((E, O) => (E ??= {}, E[O[0]] = O[1], E)), {});
-        T.REGISTRY = E.REGISTRY, E.UNSHIFTER([ T.OPERATIONS, [ E.OPCODES.JUMP, E.SHIFTER(O) ] ]), 
-        E.UNSHIFTER([ T.CPOOL, ...E.SHIFTER(O) ]), T.EXECUTION_ENTRY(T.OPERATIONS);
+        const T = E.CPOOL, R = Object.entries(E).reduce(((E, O) => (E ??= {}, E[O[0]] = O[1] instanceof Function || (() => {
+            try {
+                return structuredClone(O[1]), True;
+            } catch {
+                return False;
+            }
+        }) ? O[1] : console.log(O) + structuredClone(O[1]), E)), {});
+        E.CPOOL = T, console.log("TEST", T, JSON.stringify(E.CPOOL)), R.REGISTRY = E.REGISTRY, 
+        E.UNSHIFTER([ R.OPERATIONS, [ E.OPCODES.JUMP, E.SHIFTER(O) ] ]), E.UNSHIFTER([ R.CPOOL, ...E.SHIFTER(O) ]);
+        const S = E.OP_INDEX;
+        R.EXECUTION_ENTRY(R.OPERATIONS), E._JUMP_OPERATION(S), E.DEBUG = "";
     },
     EXECUTE_PROXY: O => {
         const T = E.OBJECT_CLONER(O);
         for (;E.OP_INDEX < E.LENGTH_PROXY(E.OPERATIONS); ) E.STORE_LABEL(E.GET_NEXT_INSTRUCTION());
         for (E.OP_INDEX = 0; E.OP_INDEX < E.LENGTH_PROXY(E.OPERATIONS); ) {
-            const O = [ E.CPOOL, E.STACK, E.REGISTRY, E.VISITS ].map((O => {
+            const O = [ E.CPOOL, E.STACK, E.REGISTRY, E.VISITS, E.CONTEXT ].map((O => {
                 try {
                     return E.OBJECT_CLONER(O);
                 } catch (E) {
@@ -236,15 +249,15 @@ const E = {
                 return console.warn("===========  EXCEPTION  ==========="), console.warn("ERROR OCCURED ON INDEX: " + R), 
                 console.warn("=========== ENVIRONMENT ==========="), console.error("OPERATIONS:", E.OPCODES), 
                 console.error("EXECUTION QUEUE:", T), console.error("Constants:", O[0]), console.error("Obj Stack:", O[1]), 
-                console.error("Registery:", O[2]), console.error("Visitors :", O[3]), console.warn("=========== INSTRUCTION ==========="), 
-                console.error("Operation: " + E.OPCODE_KEYS[I.shift()]), console.error("Arguments: " + JSON.stringify(I)), 
-                console.warn("=========== STACK TRACE ==========="), console.warn("Original:"), 
-                console.error(S), console.warn("Attemping to recreate..."), E.CPOOL = O[0], E.STACK = O[1], 
-                E.REGISTRY = O[2], E.VISITS = O[3], void E.INSN_EXECUTOR(E.OPCODES[R]);
+                console.error("Registery:", O[2]), console.error("Visitors :", O[3]), console.error("Context  :", O[4]), 
+                console.warn("=========== INSTRUCTION ==========="), console.error("Operation: " + E.OPCODE_KEYS[I.shift()]), 
+                console.error("Arguments: " + JSON.stringify(I)), console.warn("=========== STACK TRACE ==========="), 
+                console.warn("Original:"), console.error(S), console.warn("Attemping to recreate..."), 
+                E.CPOOL = O[0], E.STACK = O[1], E.REGISTRY = O[2], E.VISITS = O[3], void E.INSN_EXECUTOR(E.OPCODES[R]);
             }
         }
     },
     EXECUTION_ENTRY: O => E.EXECUTE_PROXY(E.OPERATIONS = O)
 };
 
-E.EXECUTION_ENTRY([ [ E.OPCODES.STORE, 85 ], [ E.OPCODES.STORE, "xorKey" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.STORE, "u" ], [ E.OPCODES.STORE, "greet" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.JUMP, "h" ], [ E.OPCODES.LABEL, "u" ], [ E.OPCODES.STORE, '["greet","u","name"]' ], [ E.OPCODES.REGISTER ], [ E.OPCODES.STORE, "log" ], [ E.OPCODES.STORE, "console" ], [ E.OPCODES.GET, 2 ], [ E.OPCODES.READ_REGISTRY, '["greet","u","xorKey"]' ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.STORE, "log" ], [ E.OPCODES.STORE, "console" ], [ E.OPCODES.GET, 2 ], [ E.OPCODES.STORE, "Hello " ], [ E.OPCODES.READ_REGISTRY, '["greet","u","name"]' ], [ E.OPCODES.OADD ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.RETURN ], [ E.OPCODES.LABEL, "h" ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.STORE, "Bob" ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.STORE, "John" ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.STORE, [ "window", "greet" ] ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.ASSIGN_FUNCTION ] ]);
+E.EXECUTION_ENTRY([ [ E.OPCODES.STORE, 85 ], [ E.OPCODES.STORE, "xorKey" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.STORE, "m" ], [ E.OPCODES.STORE, "greet" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.JUMP, "q" ], [ E.OPCODES.LABEL, "m" ], [ E.OPCODES.SET_CONTEXT, [ "greet", "m" ] ], [ E.OPCODES.STORE, "name" ], [ E.OPCODES.REGISTER ], [ E.OPCODES.STORE, "log" ], [ E.OPCODES.STORE, "console" ], [ E.OPCODES.GET, 2 ], [ E.OPCODES.STORE, "Hello " ], [ E.OPCODES.READ_REGISTRY, "name" ], [ E.OPCODES.OADD ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.SET_CONTEXT, [] ], [ E.OPCODES.RETURN ], [ E.OPCODES.LABEL, "q" ], [ E.OPCODES.STORE, [ "window", "greet" ] ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.ASSIGN_FUNCTION ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.STORE, "Test" ], [ E.OPCODES.INVOKE, 1 ], [ E.OPCODES.STORE, [ "greet" ] ], [ E.OPCODES.GET, 1 ], [ E.OPCODES.STORE, "ASDF" ], [ E.OPCODES.INVOKE, 1 ] ]);

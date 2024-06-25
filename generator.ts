@@ -144,11 +144,14 @@ export const transform = async (code: string) => {
                 addInstruction("JUMP", end)
                 addInstruction("LABEL", start)
 
+                addInstruction("SET_CONTEXT", [id?.name, start])
+
+                const prevContext = context;
                 context = [id?.name, start]
 
                 for (const param of params.reverse()) { // reversed because first in first out
                     if (!types.isIdentifier(param)) continue;
-                    addInstruction("STORE", JSON.stringify(context.concat(param.name)));
+                    addInstruction("STORE", param.name);
                     addInstruction("REGISTER");
                     setHandled(param);
                 }
@@ -156,8 +159,9 @@ export const transform = async (code: string) => {
 
                 handleNode(body);
 
-                context = [];
+                context = prevContext;
 
+                addInstruction("SET_CONTEXT", prevContext)
                 addInstruction("RETURN")
                 addInstruction("LABEL", end)
                 break;
@@ -193,7 +197,7 @@ export const transform = async (code: string) => {
             case "Identifier":
                 if (!types.isIdentifier(node)) return;
 
-                const contextName = JSON.stringify(context.concat([node.name]) as any);
+                const contextName = node.name;
                 const key = context.length ? contextName : node.name;
 
                 addInstruction("READ_REGISTRY", key);
